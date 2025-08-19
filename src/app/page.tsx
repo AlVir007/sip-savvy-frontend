@@ -335,32 +335,21 @@ export default function Dashboard() {
         {activeTab === 'drafts' && (
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Draft Articles</h2>
-            {drafts.length === 0 ? (
+            {draftsLoading ? (
+              <div className="text-center py-8">Loading drafts...</div>
+            ) : tasks.filter(t => t.status !== 'backlog').length === 0 ? (
               <div className="text-center py-12">
                 <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No drafts yet</h3>
-                <p className="mt-1 text-sm text-gray-500">Drafts will appear here when AI personas start writing.</p>
+                <p className="mt-1 text-sm text-gray-500">Generate drafts from tasks to see them here.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {drafts.map((draft) => (
-                  <Card key={draft.id} className="hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => { setCurrentDraft(draft); setShowDraftModal(true); }}>
-                    <CardHeader>
-                      <CardTitle className="text-base">{draft.title}</CardTitle>
-                      {draft.summary && (
-                        <p className="text-sm text-gray-600">{draft.summary}</p>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span>{draft.metadata?.word_count || 0} words</span>
-                        <span>{draft.metadata?.estimated_read_time || 0} min read</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <KanbanBoard
+                tasks={tasks.filter(t => t.status !== 'backlog')}
+                onTaskClick={handleEditTask}
+                onGenerateDraft={handleGenerateDraft}
+                onUpdateTaskStatus={handleUpdateTaskStatus}
+              />
             )}
           </div>
         )}
