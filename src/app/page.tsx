@@ -335,9 +335,7 @@ export default function Dashboard() {
         {activeTab === 'drafts' && (
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Draft Articles</h2>
-            {draftsLoading ? (
-              <div className="text-center py-8">Loading drafts...</div>
-            ) : tasks.filter(t => t.status !== 'backlog').length === 0 ? (
+            {tasks.filter(t => t.status !== 'backlog').length === 0 ? (
               <div className="text-center py-12">
                 <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No drafts yet</h3>
