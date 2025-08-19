@@ -323,10 +323,11 @@ export default function Dashboard() {
               <div className="text-center py-8">Loading tasks...</div>
             ) : (
               <KanbanBoard
-                tasks={tasks}
+                tasks={tasks.filter(t => t.status === 'backlog')}
                 onTaskClick={handleEditTask}
                 onGenerateDraft={handleGenerateDraft}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                showBacklog={true}
               />
             )}
           </div>
@@ -347,6 +348,7 @@ export default function Dashboard() {
                 onTaskClick={handleEditTask}
                 onGenerateDraft={handleGenerateDraft}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                showBacklog={false}
               />
             )}
           </div>
