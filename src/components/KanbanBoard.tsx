@@ -10,11 +10,15 @@ interface KanbanBoardProps {
   onTaskClick: (task: Task) => void;
   onGenerateDraft: (task: Task) => void;
   onUpdateTaskStatus: (taskId: string, newStatus: Task['status']) => void;
+  showBacklog?: boolean;
 }
 
-export function KanbanBoard({ tasks, onTaskClick, onGenerateDraft, onUpdateTaskStatus }: KanbanBoardProps) {
-  const columns = [
+export function KanbanBoard({ tasks, onTaskClick, onGenerateDraft, onUpdateTaskStatus, showBacklog = false }: KanbanBoardProps) {
+  console.log('KanbanBoard showBacklog:', showBacklog);
+  
+  const columns = showBacklog ? [
     { id: 'backlog' as const, title: 'Backlog', color: 'bg-gray-50' },
+  ] : [
     { id: 'in-progress' as const, title: 'In Progress', color: 'bg-blue-50' },
     { id: 'needs-review' as const, title: 'Needs Review', color: 'bg-yellow-50' },
     { id: 'approved' as const, title: 'Approved', color: 'bg-green-50' },
