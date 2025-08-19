@@ -1,14 +1,15 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://app.sipandsavvy.com/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
+  withCredentials: true,
 });
 
-// Add auth token to requests
+// Add auth token to requests if it exists
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
   if (token) {
