@@ -6,7 +6,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true,
 });
 
 // Add auth token to requests
@@ -14,8 +13,11 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
+      // Ensure headers object exists
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Request:', config.method?.toUpperCase(), config.url, 'Token:', token ? 'Present' : 'Missing');
     return config;
   },
   (error) => {
@@ -28,8 +30,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      console.log('401 Unauthorized - clearing token');
       localStorage.removeItem('auth_token');
-      // Optionally redirect to login
+      // Redirect to login if not already there
       if (typeof window !== 'undefined' && window.location.pathname !== '/') {
         window.location.href = '/';
       }
