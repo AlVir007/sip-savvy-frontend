@@ -9,7 +9,7 @@ import { usePersonas } from '@/hooks/usePersonas';
 import { useTasks } from '@/hooks/useTasks';
 import { useDrafts } from '@/hooks/useDrafts';
 import { AuthModal } from '@/components/AuthModal';
-import { PersonaModal } from '@/components/PersonaModal';
+import { EnhancedPersonaModal } from '@/components/PersonaModal';
 import { TaskModal } from '@/components/TaskModal';
 import { KanbanBoard } from '@/components/KanbanBoard';
 import { DraftModal } from '@/components/DraftModal';
@@ -426,7 +426,7 @@ export default function Dashboard() {
       </main>
 
       {/* Modals */}
-      <PersonaModal
+      <EnhancedPersonaModal
         isOpen={showPersonaModal}
         onClose={() => setShowPersonaModal(false)}
         onSave={handleSavePersona}
