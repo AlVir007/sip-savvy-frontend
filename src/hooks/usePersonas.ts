@@ -22,20 +22,26 @@ export function usePersonas() {
 
   const createPersona = async (personaData: Partial<Persona>) => {
     try {
+      console.log('📤 API creating persona:', personaData); // ADD THIS
       const response = await api.post('/personas', personaData);
+      console.log('📥 API response:', response.data); // ADD THIS
       setPersonas(prev => [...prev, response.data]);
       return response.data;
     } catch (err: any) {
+      console.error('❌ Create error:', err.response?.data || err.message); // ADD THIS
       throw new Error(err.response?.data?.message || 'Failed to create persona');
     }
   };
-
+  
   const updatePersona = async (id: string, personaData: Partial<Persona>) => {
     try {
+      console.log('📤 API updating persona:', id, personaData); // ADD THIS
       const response = await api.put(`/personas/${id}`, personaData);
+      console.log('📥 API response:', response.data); // ADD THIS
       setPersonas(prev => prev.map(p => p.id === id ? response.data : p));
       return response.data;
     } catch (err: any) {
+      console.error('❌ Update error:', err.response?.data || err.message); // ADD THIS
       throw new Error(err.response?.data?.message || 'Failed to update persona');
     }
   };
