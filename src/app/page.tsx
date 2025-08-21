@@ -15,6 +15,7 @@ import { KanbanBoard } from '@/components/KanbanBoard';
 import { DraftModal } from '@/components/DraftModal';
 import { Persona, Task } from '@/types';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
+import SocialChannelsSection from '@/components/SocialChannelsSection';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -27,10 +28,30 @@ export default function Dashboard() {
   const [currentDraft, setCurrentDraft] = useState<any>(null);
   
   const { user, logout, isLoading: authLoading } = useAuth();
-  const { personas, createPersona, updatePersona, deletePersona, isLoading: personasLoading } = usePersonas();
+  const { personas, createPersona, updatePersona, deletePersona, isLoading: personasLoading, refetch: refetchPersonas } = usePersonas();
   const { tasks, createTask, updateTask, deleteTask, generateDraft, isLoading: tasksLoading } = useTasks();
   const { drafts } = useDrafts();
   const { posts: socialPosts, createPost, generateFromDraft, isLoading: socialLoading } = useSocialPosts();
+
+  interface SocialConnectionData {
+    platform: 'x' | 'instagram' | 'linkedin' | 'tiktok' | 'youtube' | 'telegram' | 'whatsapp';
+    handle: string;
+    isActive: boolean;
+    postingStyle: string;
+    hashtagStrategy: string[];
+    postingFrequency: 'high' | 'medium' | 'low';
+    audienceTarget: string;
+  }
+  
+  interface SocialConnectionUpdates {
+    platform?: 'x' | 'instagram' | 'linkedin' | 'tiktok' | 'youtube' | 'telegram' | 'whatsapp';
+    handle?: string;
+    isActive?: boolean;
+    postingStyle?: string;
+    hashtagStrategy?: string[];
+    postingFrequency?: 'high' | 'medium' | 'low';
+    audienceTarget?: string;
+  }
 
   if (authLoading) {
     return (
@@ -357,81 +378,50 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'social' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Social Media</h2>
-            
-            {/* Generate from Draft Section */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Generate Social Media Post</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Select Draft</label>
-                    <select 
-                      className="w-full p-2 border rounded-md"
-                      onChange={async (e) => {
-                        if (e.target.value && personas.length > 0) {
-                          try {
-                            const platform = 'twitter'; // Default to Twitter
-                            const result = await generateFromDraft(e.target.value, platform);
-                            await createPost({
-                              draft_id: e.target.value,
-                              persona_id: personas[0].id, // Use first persona
-                              platform: platform as any,
-                              content: result.content,
-                              hashtags: result.hashtags || [],
-                              status: 'draft' as any
-                            });
-                          } catch (error) {
-                            console.error('Error generating social post:', error);
-                          }
-                        }
-                      }}
-                    >
-                      <option value="">Choose a draft to convert...</option>
-                      {drafts.map(draft => (
-                        <option key={draft.id} value={draft.id}>{draft.title}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Posts List */}
-            {socialLoading ? (
-              <div className="text-center py-8">Loading social posts...</div>
-            ) : socialPosts.length === 0 ? (
-              <div className="text-center py-12">
-                <ShareIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No social posts yet</h3>
-                <p className="text-xs text-gray-500">Generate posts from your drafts above.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {socialPosts.map((post: any) => (
-                  <Card key={post.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium capitalize">{post.platform}</span>
-                        <span className="text-sm text-gray-500">• {post.status}</span>
-                      </div>
-                      <p className="text-sm">{post.content}</p>
-                      {post.hashtags && Array.isArray(post.hashtags) && post.hashtags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {post.hashtags.map((tag: string, i: number) => (
-                            <span key={i} className="text-xs text-blue-600">{tag}</span>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+          <SocialChannelsSection
+            personas={personas}
+            onAddConnection={async (personaId, connectionData) => {
+              try {
+                const response = await fetch(`/api/personas/${personaId}/social-connections`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(connectionData),
+                });
+                if (response.ok) {
+                  // Refresh personas data
+                  refetchPersonas();
+                }
+              } catch (error) {
+                console.error('Failed to add connection:', error);
+              }
+            }}
+            onUpdateConnection={async (personaId, connectionId, updates) => {
+              try {
+                const response = await fetch(`/api/personas/${personaId}/social-connections/${connectionId}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(updates),
+                });
+                if (response.ok) {
+                  refetchPersonas();
+                }
+              } catch (error) {
+                console.error('Failed to update connection:', error);
+              }
+            }}
+            onRemoveConnection={async (personaId, connectionId) => {
+              try {
+                const response = await fetch(`/api/personas/${personaId}/social-connections/${connectionId}`, {
+                  method: 'DELETE',
+                });
+                if (response.ok) {
+                  refetchPersonas();
+                }
+              } catch (error) {
+                console.error('Failed to remove connection:', error);
+              }
+            }}
+          />
         )}
       </main>
 
