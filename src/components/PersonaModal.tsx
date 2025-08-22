@@ -133,7 +133,6 @@ export function EnhancedPersonaModal({
     
     setIsLoading(true);
     try {
-      // Add this debug logging FIRST:
       console.log('🔍 Raw form state values:', {
         name,
         roleTitle,
@@ -144,10 +143,11 @@ export function EnhancedPersonaModal({
         outputs,
         publishingCadence
       });
+      
       const formData = {
-        // Basic fields
+        // Existing fields
         name: name.trim(),
-        bio: bioShort.trim(), // Keep for backward compatibility
+        bio: bioShort.trim(),
         background: background.trim(),
         expertise_tags: expertiseTags,
         tone: tone.trim(),
@@ -162,7 +162,7 @@ export function EnhancedPersonaModal({
           research: capabilities.research,
         },
         
-        // NEW FIELDS - Add these:
+        // NEW FIELDS - ADD THESE:
         role_title: roleTitle.trim(),
         bio_short: bioShort.trim(),
         bio_long: bioLong.trim(),
