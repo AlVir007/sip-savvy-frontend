@@ -28,17 +28,36 @@ export interface User {
 export interface Persona {
   id: string;
   organization_id: string;
+  
+  // Basic Identity (enhanced)
   name: string;
-  bio?: string;
-  background?: string;
-  hobbies: string[];
-  expertise_tags: string[];
-  tone?: string;
-  reading_level_target: string;
-  style_guide?: string;
-  profile_picture?: string;
+  role_title?: string; // NEW
+  bio?: string; // Keep existing
+  bio_short?: string; // NEW
+  bio_long?: string; // NEW
+  background?: string; // Keep existing
+  profile_picture?: string; // Keep existing
+  
+  // Mission & Scope (NEW section)
+  mission?: string; // NEW
+  audience_segment?: string; // NEW
+  outputs?: string[]; // NEW
+  publishing_cadence?: string; // NEW
+  
+  // Expertise & Style (enhanced)
+  expertise_tags: string[]; // Keep existing
+  tone?: string; // Keep existing
+  reading_level_target: ReadingLevel; // Enhanced typing
+  style_guide?: string; // Keep existing
+  
+  // Personal Details
+  hobbies: string[]; // Keep existing
+  
+  // AI Capabilities
+  capabilities: Record<string, boolean>; // Keep existing
+  
+  // Existing fields (unchanged)
   display_order: number;
-  capabilities: Record<string, boolean>;
   knowledge_sources: any[];
   created_at: string;
   updated_at: string;

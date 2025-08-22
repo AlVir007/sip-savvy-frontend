@@ -73,26 +73,15 @@ export function EnhancedPersonaModal({
   useEffect(() => {
     if (persona) {
       setName(persona.name);
-      setRoleTitle(''); // Not in Persona type
-      setBioShort(persona.bio || '');
-      setBioLong(''); // Not in Persona type
+      setRoleTitle(persona.role_title || ''); // Now in Persona type!
+      setBioShort(persona.bio_short || persona.bio || '');
+      setBioLong(persona.bio_long || '');
       setBackground(persona.background || '');
-      setMission(''); // Not in Persona type
-      setAudienceSegment(''); // Not in Persona type
-      setOutputs([]); // Not in Persona type
-      setPublishingCadence(''); // Not in Persona type
-      setExpertiseTags(persona.expertise_tags || []);
-      setTone(persona.tone || '');
-      setReadingLevelTarget((persona.reading_level_target as ReadingLevel) || 'B1');
-      setStyleGuide(persona.style_guide || '');
-      setProfilePicture(persona.profile_picture || '');
-      setHobbies(persona.hobbies || []);
-      setCapabilities({
-        writeArticle: persona.capabilities?.writeArticle ?? true,
-        prepareInterviewQuestions: persona.capabilities?.prepareInterviewQuestions ?? false,
-        replyToEmails: persona.capabilities?.replyToEmails ?? false,
-        research: persona.capabilities?.research ?? true,
-      });
+      setMission(persona.mission || '');
+      setAudienceSegment(persona.audience_segment || '');
+      setOutputs(persona.outputs || []);
+      setPublishingCadence(persona.publishing_cadence || '');
+      // ... rest of existing fields
     } else {
       resetForm();
     }
