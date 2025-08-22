@@ -134,8 +134,9 @@ export function EnhancedPersonaModal({
     setIsLoading(true);
     try {
       const formData = {
+        // Basic fields
         name: name.trim(),
-        bio: bioShort.trim(), // Use bio for backward compatibility
+        bio: bioShort.trim(), // Keep for backward compatibility
         background: background.trim(),
         expertise_tags: expertiseTags,
         tone: tone.trim(),
@@ -149,7 +150,18 @@ export function EnhancedPersonaModal({
           replyToEmails: capabilities.replyToEmails,
           research: capabilities.research,
         },
+        
+        // NEW FIELDS - Add these:
+        role_title: roleTitle.trim(),
+        bio_short: bioShort.trim(),
+        bio_long: bioLong.trim(),
+        mission: mission.trim(),
+        audience_segment: audienceSegment.trim(),
+        outputs,
+        publishing_cadence: publishingCadence.trim(),
       };
+      
+      console.log('🚀 Complete formData being sent:', formData);
       
       await onSave(formData);
       onClose();
