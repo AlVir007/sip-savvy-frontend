@@ -133,6 +133,17 @@ export function EnhancedPersonaModal({
     
     setIsLoading(true);
     try {
+      // Add this debug logging FIRST:
+      console.log('🔍 Raw form state values:', {
+        name,
+        roleTitle,
+        bioShort,
+        bioLong,
+        mission,
+        audienceSegment,
+        outputs,
+        publishingCadence
+      });
       const formData = {
         // Basic fields
         name: name.trim(),
