@@ -30,12 +30,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.log('401 Unauthorized - clearing token');
-      localStorage.removeItem('auth_token');
-      // Redirect to login if not already there
-      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      const hasToken = localStorage.getItem('auth_token');
+      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/';
+      
+      // Only clear token if we had one AND we're not on the login page
+      if (hasToken && !isLoginPage) {
+        console.log('401 Unauthorized - clearing expired token');
+        localStorage.removeItem('auth_token');
         window.location.href = '/';
       }
+      // Don't clear token if we're on login page or if there was no token
     }
     return Promise.reject(error);
   }

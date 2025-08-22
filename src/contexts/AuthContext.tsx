@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; 
 import api from '@/lib/api';
 import { User } from '@/types';
 
@@ -16,6 +17,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();  // ADD THIS
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,9 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await api.post('/auth/login', { email, password });
     const { user, token } = response.data;
     
+    localStorage.setItem('auth_token', token);
     setUser(user);
     setToken(token);
-    localStorage.setItem('auth_token', token);
+    
+    // Simple reload to ensure everything refetches
+    window.location.href = '/';
   };
 
   const register = async (name: string, email: string, password: string, organizationName: string) => {
