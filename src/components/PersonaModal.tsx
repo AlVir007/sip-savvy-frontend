@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { X, User, Trash2 } from 'lucide-react';
 import { Persona } from '@/types';
+import ImageUpload from './ImageUpload';
 
 interface EnhancedPersonaModalProps {
   isOpen: boolean;
@@ -72,6 +73,10 @@ export function EnhancedPersonaModal({
 
   useEffect(() => {
     if (persona) {
+      console.log('🔄 Loading persona data:', persona);
+      console.log('🖼️ Profile picture from DB:', persona.profile_picture);
+
+      setProfilePicture(persona.profile_picture || '');
       setName(persona.name);
       setRoleTitle(persona.role_title || ''); // Now in Persona type!
       setBioShort(persona.bio_short || persona.bio || '');
@@ -81,6 +86,9 @@ export function EnhancedPersonaModal({
       setAudienceSegment(persona.audience_segment || '');
       setOutputs(persona.outputs || []);
       setPublishingCadence(persona.publishing_cadence || '');
+      setProfilePicture(persona.profile_picture || '');
+      
+      console.log('✅ Profile picture set to state:', persona.profile_picture || 'empty');
       // ... rest of existing fields
     } else {
       resetForm();
@@ -133,6 +141,8 @@ export function EnhancedPersonaModal({
         publishingCadence
       });
       
+      console.log('💾 Saving profile_picture:', profilePicture);
+      
       const formData = {
         // Existing fields
         name: name.trim(),
@@ -142,7 +152,7 @@ export function EnhancedPersonaModal({
         tone: tone.trim(),
         reading_level_target: readingLevelTarget,
         style_guide: styleGuide.trim(),
-        profile_picture: profilePicture.trim(),
+        profile_picture: profilePicture || '',
         hobbies,
         capabilities: {
           writeArticle: capabilities.writeArticle,
@@ -255,26 +265,10 @@ export function EnhancedPersonaModal({
                 <CardTitle>Profile Picture</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
-                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
-                  {profilePicture ? (
-                    profilePicture.startsWith('emoji:') ? (
-                      <span className="text-4xl">{profilePicture.replace('emoji:', '')}</span>
-                    ) : (
-                      <img 
-                        src={profilePicture} 
-                        alt="Profile" 
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    )
-                  ) : (
-                    <User className="w-8 h-8 text-gray-400" />
-                  )}
-                </div>
-                <Input
-                  placeholder="Avatar text or emoji (e.g., 'SC' or 'emoji:👩‍💼')"
-                  value={profilePicture}
-                  onChange={(e) => setProfilePicture(e.target.value)}
-                  className="max-w-md"
+                <ImageUpload
+                  currentImage={profilePicture}
+                  onImageChange={setProfilePicture}
+                  type="persona"
                 />
               </CardContent>
             </Card>

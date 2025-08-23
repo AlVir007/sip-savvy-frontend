@@ -281,10 +281,18 @@ export default function Dashboard() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                            <span className="text-white font-medium">
-                              {persona.profile_picture || persona.name.charAt(0)}
-                            </span>
+                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+                            {persona.profile_picture && persona.profile_picture.startsWith('http') ? (
+                              <img 
+                                src={persona.profile_picture} 
+                                alt={persona.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-white font-medium">
+                                {persona.profile_picture || persona.name.charAt(0)}
+                              </span>
+                            )}
                           </div>
                           <div>
                             <CardTitle className="text-base">{persona.name}</CardTitle>
