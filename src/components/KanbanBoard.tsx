@@ -10,7 +10,7 @@ interface KanbanBoardProps {
   onTaskClick: (task: Task) => void;
   onGenerateDraft: (task: Task) => void;
   onUpdateTaskStatus: (taskId: string, newStatus: Task['status']) => void;
-  onPublishTask?: (task: Task) => void; // Add this new prop
+  onPublishTask?: (task: Task) => void;
   showBacklog?: boolean;
 }
 
@@ -19,7 +19,7 @@ export function KanbanBoard({
   onTaskClick, 
   onGenerateDraft, 
   onUpdateTaskStatus, 
-  onPublishTask, // Add this to the function parameters
+  onPublishTask,
   showBacklog = false 
 }: KanbanBoardProps) {
   console.log('KanbanBoard showBacklog:', showBacklog);
@@ -107,8 +107,10 @@ export function KanbanBoard({
                       )}
                     </div>
                     
-                    {task.assigned_persona_id && task.status === 'backlog' && (
-                      <div className="mt-3 pt-3 border-t">
+                    {/* Task action buttons section - mutually exclusive */}
+                    <div className="mt-3 pt-3 border-t">
+                      {/* Generate Draft button for backlog tasks */}
+                      {task.assigned_persona_id && task.status === 'backlog' && (
                         <Button
                           size="sm"
                           onClick={(e) => {
@@ -120,17 +122,15 @@ export function KanbanBoard({
                           <SparklesIcon className="w-3 h-3 mr-1" />
                           Generate Draft
                         </Button>
-                      </div>
-                    )}
-                    
-                    {/* Add the Publish button for approved tasks */}
-                    {task.status === 'approved' && onPublishTask && (
-                      <div className="mt-3 pt-3 border-t">
+                      )}
+                      
+                      {/* Publish button for approved tasks */}
+                      {task.status === 'approved' && onPublishTask && (
                         <Button
                           size="sm"
                           variant="default"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent triggering the card click
+                            e.stopPropagation();
                             onPublishTask(task);
                           }}
                           className="w-full text-xs"
@@ -138,32 +138,26 @@ export function KanbanBoard({
                           <ShareIcon className="w-3 h-3 mr-1" />
                           Publish
                         </Button>
-                      </div>
-                    )}
-                    
-                    {task.status !== 'approved' && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex space-x-1">
-                          {column.id !== 'approved' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const nextStatus = 
-                                  task.status === 'backlog' ? 'in-progress' :
-                                  task.status === 'in-progress' ? 'needs-review' :
-                                  'approved';
-                                onUpdateTaskStatus(task.id, nextStatus);
-                              }}
-                              className="text-xs flex-1"
-                            >
-                              →
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                      )}
+                      
+                      {/* Arrow button for in-progress and needs-review tasks */}
+                      {task.status !== 'approved' && task.status !== 'backlog' && column.id !== 'approved' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const nextStatus = 
+                              task.status === 'in-progress' ? 'needs-review' :
+                              'approved';
+                            onUpdateTaskStatus(task.id, nextStatus);
+                          }}
+                          className="text-xs flex-1"
+                        >
+                          →
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
