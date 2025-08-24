@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { PlusIcon, UsersIcon, DocumentTextIcon, ShareIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { 
+  PlusIcon, UsersIcon, DocumentTextIcon, ShareIcon, 
+  ArrowRightOnRectangleIcon, NewspaperIcon // Add NewspaperIcon
+} from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonas } from '@/hooks/usePersonas';
 import { useTasks } from '@/hooks/useTasks';
@@ -196,6 +200,13 @@ export default function Dashboard() {
                 {tab.name}
               </button>
             ))}
+            
+            {/* Add Publishing as a Link component */}
+            <Link href="/publishing">
+              <a className="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                Publishing
+              </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -254,7 +265,7 @@ export default function Dashboard() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">AI Journalist Personas</h2>
-              <Button variant="primary" onClick={handleCreatePersona}>
+              <Button variant="default" onClick={handleCreatePersona}>
                 <PlusIcon className="w-4 h-4 mr-2" />
                 Create Persona
               </Button>
@@ -268,7 +279,7 @@ export default function Dashboard() {
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No personas yet</h3>
                 <p className="mt-1 text-sm text-gray-500">Get started by creating your first AI journalist persona.</p>
                 <div className="mt-6">
-                  <Button variant="primary" onClick={handleCreatePersona}>
+                  <Button variant="default" onClick={handleCreatePersona}>
                     <PlusIcon className="w-4 h-4 mr-2" />
                     Create Persona
                   </Button>
@@ -344,7 +355,7 @@ export default function Dashboard() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Editorial Tasks</h2>
-              <Button variant="primary" onClick={handleCreateTask}>
+              <Button variant="default" onClick={handleCreateTask}>
                 <PlusIcon className="w-4 h-4 mr-2" />
                 Create Task
               </Button>
