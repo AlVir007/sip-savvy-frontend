@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link'; 
+import React, { useState } from 'react'; // Add React import here
+import Link from 'next/link';
+import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
@@ -148,6 +149,49 @@ export default function Dashboard() {
     }
   };
 
+    // Update your handlePublishTask function
+  const handlePublishTask = async (task: Task) => {
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading('Publishing article...');
+      
+      // First, convert the task to an article if it's not already
+      const articleData = {
+        title: task.title,
+        content: task.description || '',
+        excerpt: task.description,
+        persona_id: task.assigned_persona_id,
+        status: 'published',
+        // Add other fields as needed
+      };
+      
+      // Call your API to publish
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(articleData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to publish article');
+      }
+      
+      // Update task status
+      await updateTask(task.id, { status: 'approved' });
+      
+      // Dismiss loading toast and show success toast
+      toast.dismiss(loadingToast);
+      toast.success('Task published successfully!', {
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to publish task:', error);
+      toast.error('Failed to publish. Please try again.', {
+        duration: 3000,
+      });
+    }
+  };
+
   const tasksByStatus = {
     backlog: tasks.filter(t => t.status === 'backlog').length,
     'in-progress': tasks.filter(t => t.status === 'in-progress').length,
@@ -156,6 +200,8 @@ export default function Dashboard() {
   };
 
   return (
+    
+    
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
@@ -187,10 +233,17 @@ export default function Dashboard() {
               { id: 'tasks', name: 'Tasks' },
               { id: 'drafts', name: 'Drafts' },
               { id: 'social', name: 'Social' },
+              { id: 'publishing', name: 'Publishing' }
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === 'publishing') {
+                    window.location.href = '/publishing';
+                  } else {
+                    setActiveTab(tab.id);
+                  }
+                }}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
@@ -372,6 +425,7 @@ export default function Dashboard() {
                 onTaskClick={handleEditTask}
                 onGenerateDraft={handleGenerateDraft}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                onPublishTask={handlePublishTask} // Add this
                 showBacklog={true}
               />
             )}

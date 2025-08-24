@@ -1,4 +1,5 @@
 // src/components/publishing/editor/ArticleEditor.tsx
+'use client';
 import React, { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -48,6 +49,7 @@ export function ArticleEditor({
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none p-4 min-h-[400px]',
       },
     },
+    immediatelyRender: false, // Add this line
   });
 
   useEffect(() => {

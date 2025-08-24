@@ -3,11 +3,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useArticles } from '@/hooks/publishing/useArticles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  PlusCircle, Edit, Trash2, Eye, Star, Clock
+  PlusCircle, Edit, Trash2, Eye, Star, Clock, ArrowLeft
 } from 'lucide-react';
 import {
   Select,
@@ -22,6 +23,7 @@ import { format } from 'date-fns';
 export default function PublishingPage() {
   const { articles, loading, error, fetchArticles, deleteArticle, publishArticle, featureArticle } = useArticles();
   const [statusFilter, setStatusFilter] = useState('all');
+  const router = useRouter();
 
   const handleFilterChange = (value: string) => {
     setStatusFilter(value);
@@ -40,8 +42,17 @@ export default function PublishingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Articles</h1>
+      {/* Add this block for the back button */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center space-x-2">
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold">Publishing</h1>
+        </div>
         <Link href="/publishing/new">
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />

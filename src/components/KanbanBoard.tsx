@@ -1,19 +1,27 @@
 "use client";
-
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Task } from '@/types';
-import { CalendarIcon, UserIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, UserIcon, SparklesIcon, ShareIcon } from '@heroicons/react/24/outline';
 
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onGenerateDraft: (task: Task) => void;
   onUpdateTaskStatus: (taskId: string, newStatus: Task['status']) => void;
+  onPublishTask?: (task: Task) => void; // Add this new prop
   showBacklog?: boolean;
 }
 
-export function KanbanBoard({ tasks, onTaskClick, onGenerateDraft, onUpdateTaskStatus, showBacklog = false }: KanbanBoardProps) {
+export function KanbanBoard({ 
+  tasks, 
+  onTaskClick, 
+  onGenerateDraft, 
+  onUpdateTaskStatus, 
+  onPublishTask, // Add this to the function parameters
+  showBacklog = false 
+}: KanbanBoardProps) {
   console.log('KanbanBoard showBacklog:', showBacklog);
   
   const columns = showBacklog ? [
@@ -111,6 +119,24 @@ export function KanbanBoard({ tasks, onTaskClick, onGenerateDraft, onUpdateTaskS
                         >
                           <SparklesIcon className="w-3 h-3 mr-1" />
                           Generate Draft
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* Add the Publish button for approved tasks */}
+                    {task.status === 'approved' && onPublishTask && (
+                      <div className="mt-3 pt-3 border-t">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering the card click
+                            onPublishTask(task);
+                          }}
+                          className="w-full text-xs"
+                        >
+                          <ShareIcon className="w-3 h-3 mr-1" />
+                          Publish
                         </Button>
                       </div>
                     )}
