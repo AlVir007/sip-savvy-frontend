@@ -254,7 +254,8 @@ export default function Dashboard() {
               </button>
             ))}
             
-            {/* Publishing button that navigates programmatically */}
+            {/* Remove this standalone Publishing button */}
+            {/* 
             <button
               onClick={() => {
                 window.location.href = '/publishing';
@@ -263,6 +264,7 @@ export default function Dashboard() {
             >
               Publishing
             </button>
+            */}
           </div>
         </div>
       </nav>
