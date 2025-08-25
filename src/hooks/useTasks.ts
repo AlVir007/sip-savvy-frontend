@@ -30,53 +30,47 @@ export function useTasks() {
     }
   };
 
-  const updateTask = async (id: string, taskData: Partial<Task>) => {
+  const updateTaskStatus = async (id: string, newStatus: Task['status']) => {
     try {
-      // Get the current task to merge with updates
       const currentTask = tasks.find(t => t.id === id);
       if (!currentTask) {
         throw new Error('Task not found');
       }
       
-      // Merge current task data with updates to ensure ALL required fields are present
-      const updateData = {
-        // Required fields that must always be present
-        id: currentTask.id,
-        organization_id: currentTask.organization_id,
-        assigned_by: currentTask.assigned_by,
-        title: currentTask.title,
-        sources: currentTask.sources,
-        type: currentTask.type,
-        status: currentTask.status,
-        priority: currentTask.priority,
-        created_at: currentTask.created_at,
-        updated_at: currentTask.updated_at,
-        
-        // Optional fields that might be updated
-        assigned_persona_id: currentTask.assigned_persona_id,
-        topic: currentTask.topic,
-        description: currentTask.description,
-        section: currentTask.section,
-        due_date: currentTask.due_date,
-        ai_provider: currentTask.ai_provider,
-        
-        // Publishing fields
-        publishWebsite: currentTask.publishWebsite,
-        publishSocial: currentTask.publishSocial,
-        socialPlatforms: currentTask.socialPlatforms,
-        publishSchedule: currentTask.publishSchedule,
-        scheduledTime: currentTask.scheduledTime,
-        publishedAt: currentTask.publishedAt,
-        publishedTo: currentTask.publishedTo,
-        
-        // Override with new data
-        ...taskData
+      // For status updates, only send the status field
+      const response = await api.put(`/tasks/${id}`, { status: newStatus });
+      setTasks(prev => prev.map(t => t.id === id ? response.data : t));
+      return response.data;
+    } catch (err: any) {
+      console.error('❌ Update task status error:', err.response?.data);
+      throw new Error(err.response?.data?.message || 'Failed to update task status');
+    }
+  };
+
+  const updateTask = async (id: string, taskData: Partial<Task>) => {
+    try {
+      const currentTask = tasks.find(t => t.id === id);
+      if (!currentTask) {
+        throw new Error('Task not found');
+      }
+      
+      // Merge current task with updates, ensuring required fields exist
+      const updateData: Partial<Task> = {
+        ...currentTask,           // Start with all current values
+        ...taskData,              // Apply updates
+        id: currentTask.id,       // Ensure ID never changes
+        created_at: currentTask.created_at, // Ensure created_at never changes
       };
+      
+      console.log('🔍 Current task:', currentTask);
+      console.log('📝 Update data:', taskData);
+      console.log('🚀 Final update payload:', updateData);
       
       const response = await api.put(`/tasks/${id}`, updateData);
       setTasks(prev => prev.map(t => t.id === id ? response.data : t));
       return response.data;
     } catch (err: any) {
+      console.error('❌ Update task error:', err.response?.data);
       throw new Error(err.response?.data?.message || 'Failed to update task');
     }
   };
