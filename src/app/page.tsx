@@ -26,6 +26,14 @@ import { PublishingModal } from '@/components/publishing/PublishingModal';
 import { moveDraftToPublishing, getDraftByTaskId } from '@/lib/moveToPublishing';
 
 export default function Dashboard() {
+  // 1. ALL hooks must be called first, before any conditional logic
+  const { user, logout, isLoading: authLoading } = useAuth();
+  const { personas, createPersona, updatePersona, deletePersona, isLoading: personasLoading, refetch: refetchPersonas } = usePersonas();
+  const { tasks, createTask, updateTask, deleteTask, generateDraft, isLoading: tasksLoading, refetch: refetchTasks } = useTasks();
+  const { drafts, updateDraft, refetch: refetchDrafts } = useDrafts();
+  const { posts: socialPosts, createPost, generateFromDraft, isLoading: socialLoading } = useSocialPosts();
+
+  // 2. State hooks
   const [activeTab, setActiveTab] = useState('overview');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPersonaModal, setShowPersonaModal] = useState(false);
@@ -34,17 +42,11 @@ export default function Dashboard() {
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [currentDraft, setCurrentDraft] = useState<any>(null);
-  
-  // Add state for publishing modal
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [selectedTaskForPublishing, setSelectedTaskForPublishing] = useState<Task | null>(null);
-  
-  const { user, logout, isLoading: authLoading } = useAuth();
-  const { personas, createPersona, updatePersona, deletePersona, isLoading: personasLoading, refetch: refetchPersonas } = usePersonas();
-  const { tasks, createTask, updateTask, deleteTask, generateDraft, isLoading: tasksLoading, refetch: refetchTasks } = useTasks();
-  const { drafts, updateDraft, refetch: refetchDrafts } = useDrafts();
-  const { posts: socialPosts, createPost, generateFromDraft, isLoading: socialLoading } = useSocialPosts();
+  const [isSavingTask, setIsSavingTask] = useState(false);
 
+  // 3. Interface definitions
   interface SocialConnectionData {
     platform: 'x' | 'instagram' | 'linkedin' | 'tiktok' | 'youtube' | 'telegram' | 'whatsapp';
     handle: string;
@@ -65,34 +67,7 @@ export default function Dashboard() {
     audienceTarget?: string;
   }
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Sip & Savvy</CardTitle>
-            <p className="text-gray-600">Virtual Newsroom</p>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="mb-4">AI-powered newsroom for the drinks & HoReCa industry</p>
-            <Button onClick={() => setShowAuthModal(true)} size="lg" className="w-full">
-              Get Started
-            </Button>
-          </CardContent>
-        </Card>
-        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      </div>
-    );
-  }
-
+  // 4. ALL handler functions must be defined at component level
   const handleCreatePersona = () => {
     setEditingPersona(null);
     setShowPersonaModal(true);
@@ -127,8 +102,6 @@ export default function Dashboard() {
     setShowTaskModal(true);
   };
 
-  const [isSavingTask, setIsSavingTask] = useState(false);
-
   const handleSaveTask = async (taskData: Partial<Task>) => {
     if (isSavingTask) return; // Prevent multiple submissions
     
@@ -143,8 +116,11 @@ export default function Dashboard() {
         toast.success('Task created successfully!');
       }
       
+      // Close the modal and reset state
       setShowTaskModal(false);
       setEditingTask(undefined);
+      
+      // Refresh tasks to show updated data
       await refetchTasks();
       
     } catch (error) {
@@ -176,10 +152,8 @@ export default function Dashboard() {
     }
   };
 
-  // NEW: Handle draft approval
   const handleApproveDraft = async (draftId: string) => {
     try {
-      // First, get the draft to be approved
       const draft = drafts.find(d => d.id === draftId);
       
       if (!draft) {
@@ -187,19 +161,15 @@ export default function Dashboard() {
         return;
       }
       
-      // Note: Draft interface doesn't have status, so we skip updating draft status
       toast.success('Draft approved successfully');
       
-      // Move the draft to the publishing section
       await moveDraftToPublishing(draft, 'draft');
       toast.success('Draft moved to Publishing section');
       
-      // Update related task status if needed
       if (draft.task_id) {
         await updateTask(draft.task_id, { status: 'approved' });
       }
       
-      // Refresh drafts and tasks
       await refetchDrafts();
       await refetchTasks();
       
@@ -209,13 +179,10 @@ export default function Dashboard() {
     }
   };
 
-  // NEW: Handle draft rejection
   const handleRejectDraft = async (draftId: string) => {
     try {
-      // Note: Draft interface doesn't have status, so we skip updating draft status
       toast.success('Draft rejected');
       
-      // Find the associated task to update its status
       const draft = drafts.find(d => d.id === draftId);
       if (draft?.task_id) {
         await updateTask(draft.task_id, { status: 'in-progress' });
@@ -229,10 +196,8 @@ export default function Dashboard() {
     }
   };
 
-  // Updated to open the publishing modal
   const handlePublishTask = async (task: Task) => {
     try {
-      // Try to get the draft associated with this task
       const draft = await getDraftByTaskId(task.id);
       
       if (!draft) {
@@ -240,7 +205,6 @@ export default function Dashboard() {
         return;
       }
       
-      // Show the publishing modal
       setSelectedTaskForPublishing(task);
       setCurrentDraft(draft);
       setPublishModalOpen(true);
@@ -249,19 +213,15 @@ export default function Dashboard() {
       console.error('Failed to prepare for publishing:', error);
       toast.error('Failed to prepare for publishing');
       
-      // Fallback to just showing the modal with the task
       setSelectedTaskForPublishing(task);
       setPublishModalOpen(true);
     }
   };
 
-  // Updated to use the utility function
   const handlePublishContent = async (publishData: any) => {
     try {
-      // Show loading toast
       const loadingToast = toast.loading('Publishing content...');
       
-      // Try to get the draft associated with the task
       let draft;
       try {
         draft = await getDraftByTaskId(publishData.taskId);
@@ -270,10 +230,8 @@ export default function Dashboard() {
       }
       
       if (draft) {
-        // If we have a draft, use it to create the article
         await moveDraftToPublishing(draft, 'published');
       } else {
-        // Fallback to the existing direct API call method
         const articleData = {
           title: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.title : '',
           content: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description || '' : '',
@@ -298,23 +256,20 @@ export default function Dashboard() {
         }
       }
       
-      // Handle social media posts if needed
       if (publishData.publishSocial && publishData.socialPlatforms.length > 0) {
-        // Create social media posts
         for (const platform of publishData.socialPlatforms) {
           await createPost({
             platform,
             content: publishData.socialContent,
             draft_id: draft?.id || publishData.taskId,
             persona_id: tasks.find(t => t.id === publishData.taskId)?.assigned_persona_id || '',
-            hashtags: [], // Add this if your interface requires it
+            hashtags: [],
             status: publishData.scheduleType === 'scheduled' ? 'scheduled' : 'draft',
             target_time: publishData.scheduleType === 'scheduled' ? publishData.scheduledTime : undefined,
           });
         }
       }
       
-      // Update task status and set publishedTo and publishedAt
       await updateTask(publishData.taskId, { 
         status: 'approved',
         publishedAt: publishData.scheduleType === 'now' ? new Date().toISOString() : undefined,
@@ -324,13 +279,11 @@ export default function Dashboard() {
         ]
       });
       
-      // Dismiss loading toast and show success toast
       toast.dismiss(loadingToast);
       toast.success('Content published successfully!', {
         duration: 3000,
       });
       
-      // Refresh data
       await refetchTasks();
       await refetchDrafts();
       
@@ -342,6 +295,7 @@ export default function Dashboard() {
     }
   };
 
+  // 5. Calculate derived values
   const tasksByStatus = {
     backlog: tasks.filter(t => t.status === 'backlog').length,
     'in-progress': tasks.filter(t => t.status === 'in-progress').length,
@@ -349,328 +303,365 @@ export default function Dashboard() {
     approved: tasks.filter(t => t.status === 'approved').length,
   };
 
+  // 6. Render function
+  const renderContent = () => {
+    if (authLoading) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-lg">Loading...</div>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Sip & Savvy</CardTitle>
+              <p className="text-gray-600">Virtual Newsroom</p>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="mb-4">AI-powered newsroom for the drinks & HoReCa industry</p>
+              <Button onClick={() => setShowAuthModal(true)} size="lg" className="w-full">
+                Get Started
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Main dashboard content when user is authenticated
+    return (
+      <>
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <h1 className="text-2xl font-bold text-gray-900">Sip & Savvy</h1>
+                <span className="ml-2 text-sm text-gray-500">Virtual Newsroom</span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600">
+                  {user.name} ({user.organization?.name})
+                </span>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Navigation */}
+        <nav className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex space-x-8">
+              {[
+                { id: 'overview', name: 'Overview' },
+                { id: 'personas', name: 'Personas' },
+                { id: 'tasks', name: 'Tasks' },
+                { id: 'drafts', name: 'Drafts' },
+                { id: 'social', name: 'Social' },
+                { id: 'publishing', name: 'Publishing' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    if (tab.id === 'publishing') {
+                      window.location.href = '/publishing';
+                    } else {
+                      setActiveTab(tab.id);
+                    }
+                  }}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Personas</CardTitle>
+                  <UsersIcon className="h-4 w-4 text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{personas.length}</div>
+                  <p className="text-xs text-gray-500">AI journalists ready to work</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tasks in Progress</CardTitle>
+                  <DocumentTextIcon className="h-4 w-4 text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{tasksByStatus['in-progress']}</div>
+                  <p className="text-xs text-gray-500">Articles being written</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+                  <DocumentTextIcon className="h-4 w-4 text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{tasksByStatus['needs-review']}</div>
+                  <p className="text-xs text-gray-500">Awaiting approval</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Published</CardTitle>
+                  <ShareIcon className="h-4 w-4 text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{tasksByStatus.approved}</div>
+                  <p className="text-xs text-gray-500">Completed articles</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'personas' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">AI Journalist Personas</h2>
+                <Button variant="default" onClick={handleCreatePersona}>
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Create Persona
+                </Button>
+              </div>
+              
+              {personasLoading ? (
+                <div className="text-center py-8">Loading personas...</div>
+              ) : personas.length === 0 ? (
+                <div className="text-center py-12">
+                  <UsersIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No personas yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">Get started by creating your first AI journalist persona.</p>
+                  <div className="mt-6">
+                    <Button variant="default" onClick={handleCreatePersona}>
+                      <PlusIcon className="w-4 h-4 mr-2" />
+                      Create Persona
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {personas.map((persona) => (
+                    <Card key={persona.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+                              {persona.profile_picture && persona.profile_picture.startsWith('http') ? (
+                                <img 
+                                  src={persona.profile_picture} 
+                                  alt={persona.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-white font-medium">
+                                  {persona.profile_picture || persona.name.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <CardTitle className="text-base">{persona.name}</CardTitle>
+                              <p className="text-sm text-gray-500">{persona.tone}</p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={() => handleEditPersona(persona)}
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeletePersona(persona)}
+                              className="text-red-600 hover:text-red-800 text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-600 mb-3">{persona.bio}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {persona.expertise_tags.slice(0, 3).map((tag, tagIndex) => (
+                            <span
+                              key={tagIndex}
+                              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {persona.expertise_tags.length > 3 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                              +{persona.expertise_tags.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'tasks' && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Editorial Tasks</h2>
+                <Button variant="default" onClick={handleCreateTask}>
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Create Task
+                </Button>
+              </div>
+              
+              {tasksLoading ? (
+                <div className="text-center py-8">Loading tasks...</div>
+              ) : (
+                <KanbanBoard
+                  tasks={tasks.filter(t => t.status === 'backlog')}
+                  onTaskClick={handleEditTask}
+                  onGenerateDraft={handleGenerateDraft}
+                  onUpdateTaskStatus={handleUpdateTaskStatus}
+                  onPublishTask={handlePublishTask}
+                  showBacklog={true}
+                />
+              )}
+            </div>
+          )}
+
+          {activeTab === 'drafts' && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Draft Articles</h2>
+              {tasks.filter(t => t.status !== 'backlog').length === 0 ? (
+                <div className="text-center py-12">
+                  <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No drafts yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">Generate drafts from tasks to see them here.</p>
+                </div>
+              ) : (
+                <KanbanBoard
+                  tasks={tasks.filter(t => t.status !== 'backlog')}
+                  onTaskClick={handleEditTask}
+                  onGenerateDraft={handleGenerateDraft}
+                  onUpdateTaskStatus={handleUpdateTaskStatus}
+                  onPublishTask={handlePublishTask}
+                  showBacklog={false}
+                />
+              )}
+            </div>
+          )}
+
+          {activeTab === 'social' && (
+            <SocialChannelsSection
+              personas={personas}
+              onAddConnection={async (personaId, connectionData) => {
+                try {
+                  const response = await fetch(`/api/personas/${personaId}/social-connections`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(connectionData),
+                  });
+                  if (response.ok) {
+                    refetchPersonas();
+                  }
+                } catch (error) {
+                  console.error('Failed to add connection:', error);
+                }
+              }}
+              onUpdateConnection={async (personaId, connectionId, updates) => {
+                try {
+                  const response = await fetch(`/api/personas/${personaId}/social-connections/${connectionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates),
+                  });
+                  if (response.ok) {
+                    refetchPersonas();
+                  }
+                } catch (error) {
+                  console.error('Failed to update connection:', error);
+                }
+              }}
+              onRemoveConnection={async (personaId, connectionId) => {
+                try {
+                  const response = await fetch(`/api/personas/${personaId}/social-connections/${connectionId}`, {
+                    method: 'DELETE',
+                  });
+                  if (response.ok) {
+                    refetchPersonas();
+                  }
+                } catch (error) {
+                  console.error('Failed to remove connection:', error);
+                }
+              }}
+            />
+          )}
+        </main>
+
+        {/* Modals */}
+        <EnhancedPersonaModal
+          isOpen={showPersonaModal}
+          onClose={() => setShowPersonaModal(false)}
+          onSave={handleSavePersona}
+          persona={editingPersona}
+        />
+
+        <TaskModal
+          isOpen={showTaskModal}
+          onClose={() => setShowTaskModal(false)}
+          onSave={handleSaveTask}
+          personas={personas}
+          task={editingTask}
+        />
+
+        <DraftModal
+          isOpen={showDraftModal}
+          onClose={() => setShowDraftModal(false)}
+          draft={currentDraft}
+          onApprove={handleApproveDraft}
+          onReject={handleRejectDraft}
+        />
+        
+        <PublishingModal
+          isOpen={publishModalOpen}
+          onClose={() => setPublishModalOpen(false)}
+          task={selectedTaskForPublishing}
+          onPublish={handlePublishContent}
+        />
+      </>
+    );
+  };
+
+  // 7. Always return the same structure, let renderContent handle the logic
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">Sip & Savvy</h1>
-              <span className="ml-2 text-sm text-gray-500">Virtual Newsroom</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                {user.name} ({user.organization?.name})
-              </span>
-              <Button variant="ghost" size="sm" onClick={logout}>
-                <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            {[
-              { id: 'overview', name: 'Overview' },
-              { id: 'personas', name: 'Personas' },
-              { id: 'tasks', name: 'Tasks' },
-              { id: 'drafts', name: 'Drafts' },
-              { id: 'social', name: 'Social' },
-              { id: 'publishing', name: 'Publishing' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  if (tab.id === 'publishing') {
-                    window.location.href = '/publishing';
-                  } else {
-                    setActiveTab(tab.id);
-                  }
-                }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Personas</CardTitle>
-                <UsersIcon className="h-4 w-4 text-gray-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{personas.length}</div>
-                <p className="text-xs text-gray-500">AI journalists ready to work</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tasks in Progress</CardTitle>
-                <DocumentTextIcon className="h-4 w-4 text-gray-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{tasksByStatus['in-progress']}</div>
-                <p className="text-xs text-gray-500">Articles being written</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-                <DocumentTextIcon className="h-4 w-4 text-gray-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{tasksByStatus['needs-review']}</div>
-                <p className="text-xs text-gray-500">Awaiting approval</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Published</CardTitle>
-                <ShareIcon className="h-4 w-4 text-gray-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{tasksByStatus.approved}</div>
-                <p className="text-xs text-gray-500">Completed articles</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'personas' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">AI Journalist Personas</h2>
-              <Button variant="default" onClick={handleCreatePersona}>
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Create Persona
-              </Button>
-            </div>
-            
-            {personasLoading ? (
-              <div className="text-center py-8">Loading personas...</div>
-            ) : personas.length === 0 ? (
-              <div className="text-center py-12">
-                <UsersIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No personas yet</h3>
-                <p className="mt-1 text-sm text-gray-500">Get started by creating your first AI journalist persona.</p>
-                <div className="mt-6">
-                  <Button variant="default" onClick={handleCreatePersona}>
-                    <PlusIcon className="w-4 h-4 mr-2" />
-                    Create Persona
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {personas.map((persona) => (
-                  <Card key={persona.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
-                            {persona.profile_picture && persona.profile_picture.startsWith('http') ? (
-                              <img 
-                                src={persona.profile_picture} 
-                                alt={persona.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-white font-medium">
-                                {persona.profile_picture || persona.name.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <CardTitle className="text-base">{persona.name}</CardTitle>
-                            <p className="text-sm text-gray-500">{persona.tone}</p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => handleEditPersona(persona)}
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeletePersona(persona)}
-                            className="text-red-600 hover:text-red-800 text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600 mb-3">{persona.bio}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {persona.expertise_tags.slice(0, 3).map((tag, tagIndex) => (
-                          <span
-                            key={tagIndex}
-                            className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {persona.expertise_tags.length > 3 && (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                            +{persona.expertise_tags.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'tasks' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Editorial Tasks</h2>
-              <Button variant="default" onClick={handleCreateTask}>
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Create Task
-              </Button>
-            </div>
-            
-            {tasksLoading ? (
-              <div className="text-center py-8">Loading tasks...</div>
-            ) : (
-              <KanbanBoard
-                tasks={tasks.filter(t => t.status === 'backlog')}
-                onTaskClick={handleEditTask}
-                onGenerateDraft={handleGenerateDraft}
-                onUpdateTaskStatus={handleUpdateTaskStatus}
-                onPublishTask={handlePublishTask}
-                showBacklog={true}
-              />
-            )}
-          </div>
-        )}
-
-        {activeTab === 'drafts' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Draft Articles</h2>
-            {tasks.filter(t => t.status !== 'backlog').length === 0 ? (
-              <div className="text-center py-12">
-                <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No drafts yet</h3>
-                <p className="mt-1 text-sm text-gray-500">Generate drafts from tasks to see them here.</p>
-              </div>
-            ) : (
-              <KanbanBoard
-                tasks={tasks.filter(t => t.status !== 'backlog')}
-                onTaskClick={handleEditTask}
-                onGenerateDraft={handleGenerateDraft}
-                onUpdateTaskStatus={handleUpdateTaskStatus}
-                onPublishTask={handlePublishTask}
-                showBacklog={false}
-              />
-            )}
-          </div>
-        )}
-
-        {activeTab === 'social' && (
-          <SocialChannelsSection
-            personas={personas}
-            onAddConnection={async (personaId, connectionData) => {
-              try {
-                const response = await fetch(`/api/personas/${personaId}/social-connections`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(connectionData),
-                });
-                if (response.ok) {
-                  // Refresh personas data
-                  refetchPersonas();
-                }
-              } catch (error) {
-                console.error('Failed to add connection:', error);
-              }
-            }}
-            onUpdateConnection={async (personaId, connectionId, updates) => {
-              try {
-                const response = await fetch(`/api/personas/${personaId}/social-connections/${connectionId}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(updates),
-                });
-                if (response.ok) {
-                  refetchPersonas();
-                }
-              } catch (error) {
-                console.error('Failed to update connection:', error);
-              }
-            }}
-            onRemoveConnection={async (personaId, connectionId) => {
-              try {
-                const response = await fetch(`/api/personas/${personaId}/social-connections/${connectionId}`, {
-                  method: 'DELETE',
-                });
-                if (response.ok) {
-                  refetchPersonas();
-                }
-              } catch (error) {
-                console.error('Failed to remove connection:', error);
-              }
-            }}
-          />
-        )}
-      </main>
-
-      {/* Modals */}
-      <EnhancedPersonaModal
-        isOpen={showPersonaModal}
-        onClose={() => setShowPersonaModal(false)}
-        onSave={handleSavePersona}
-        persona={editingPersona}
-      />
-
-      <TaskModal
-        isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        onSave={handleSaveTask}
-        personas={personas}
-        task={editingTask}
-      />
-
-      {/* Updated to pass onApprove and onReject */}
-      <DraftModal
-        isOpen={showDraftModal}
-        onClose={() => setShowDraftModal(false)}
-        draft={currentDraft}
-        onApprove={handleApproveDraft}
-        onReject={handleRejectDraft}
-      />
-      
-      <PublishingModal
-        isOpen={publishModalOpen}
-        onClose={() => setPublishModalOpen(false)}
-        task={selectedTaskForPublishing}
-        onPublish={handlePublishContent}
-      />
+      {renderContent()}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 }
