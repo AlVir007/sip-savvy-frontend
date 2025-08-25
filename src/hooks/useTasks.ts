@@ -54,16 +54,26 @@ export function useTasks() {
         throw new Error('Task not found');
       }
       
-      // Merge current task with updates, ensuring required fields exist
+      // Filter out empty values from taskData
+      const cleanTaskData = Object.fromEntries(
+        Object.entries(taskData).filter(([key, value]) => {
+          if (typeof value === 'string') return value.trim() !== '';
+          if (Array.isArray(value)) return value.length > 0;
+          return value !== null && value !== undefined;
+        })
+      );
+      
+      // Merge current task with cleaned updates
       const updateData: Partial<Task> = {
         ...currentTask,           // Start with all current values
-        ...taskData,              // Apply updates
+        ...cleanTaskData,         // Apply only valid updates
         id: currentTask.id,       // Ensure ID never changes
         created_at: currentTask.created_at, // Ensure created_at never changes
       };
       
       console.log('🔍 Current task:', currentTask);
       console.log('📝 Update data:', taskData);
+      console.log('🧹 Cleaned update data:', cleanTaskData);
       console.log('🚀 Final update payload:', updateData);
       
       const response = await api.put(`/tasks/${id}`, updateData);
