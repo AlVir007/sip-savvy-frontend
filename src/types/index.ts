@@ -73,7 +73,7 @@ export interface Task {
   description?: string;
   sources: string[];
   type: 'feature' | 'news' | 'blog' | 'interview';
-  status: 'backlog' | 'in-progress' | 'needs-review' | 'approved';
+  status: 'backlog' | 'in-progress' | 'needs-review' | 'approved' | 'published'; // Added 'published'
   section?: string;
   priority: 'low' | 'medium' | 'high';
   due_date?: string;
@@ -82,6 +82,15 @@ export interface Task {
   updated_at: string;
   persona?: Persona;
   assigned_by_user?: User;
+  
+  // New publishing-related fields
+  publishWebsite?: boolean;
+  publishSocial?: boolean;
+  socialPlatforms?: string[];
+  publishSchedule?: 'immediately' | 'scheduled';
+  scheduledTime?: string;
+  publishedAt?: string; // When it was actually published
+  publishedTo?: string[]; // List of platforms where it was published
 }
 
 export interface Draft {
@@ -102,4 +111,65 @@ export interface Draft {
   created_at: string;
   updated_at: string;
   task?: Task;
+}
+
+export interface PublishingData {
+  taskId: string;
+  publishWebsite: boolean;
+  publishSocial: boolean;
+  socialPlatforms: string[];
+  scheduleType: 'now' | 'scheduled';
+  scheduledTime?: string;
+  socialContent?: string;
+}
+
+export interface Article {
+  id: string;
+  organization_id: string;
+  task_id?: string;
+  draft_id?: string;
+  title: string;
+  content: string;
+  excerpt?: string;
+  featured_image?: string;
+  author_id?: string;
+  persona_id?: string;
+  status: 'draft' | 'review' | 'published' | 'archived';
+  is_featured: boolean;
+  categories: Array<{
+    id: number;
+    name: string;
+    color?: string;
+  }>;
+  tags: Array<{
+    id: number;
+    name: string;
+  }>;
+  reading_time?: number;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+  persona?: Persona;
+  task?: Task;
+}
+
+export interface SocialPost {
+  id: string;
+  organization_id: string;
+  article_id?: string;
+  task_id?: string;
+  content: string;
+  platform: 'twitter' | 'facebook' | 'linkedin' | 'instagram';
+  media_urls?: string[];
+  status: 'draft' | 'scheduled' | 'published' | 'failed';
+  scheduled_for?: string;
+  published_at?: string;
+  engagement_stats?: {
+    likes?: number;
+    shares?: number;
+    comments?: number;
+    clicks?: number;
+  };
+  created_at: string;
+  updated_at: string;
 }

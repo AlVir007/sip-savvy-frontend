@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from 'react'; // Add React import here
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { 
   PlusIcon, UsersIcon, DocumentTextIcon, ShareIcon, 
-  ArrowRightOnRectangleIcon, NewspaperIcon // Add NewspaperIcon
+  ArrowRightStartOnRectangleIcon, NewspaperIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonas } from '@/hooks/usePersonas';
@@ -21,6 +21,8 @@ import { DraftModal } from '@/components/DraftModal';
 import { Persona, Task } from '@/types';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import SocialChannelsSection from '@/components/SocialChannelsSection';
+// Import the PublishingModal component
+import { PublishingModal } from '@/components/publishing/PublishingModal';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -29,8 +31,12 @@ export default function Dashboard() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [currentDraft, setCurrentDraft] = useState<any>(null);
+  
+  // Add state for publishing modal
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [selectedTaskForPublishing, setSelectedTaskForPublishing] = useState<Task | null>(null);
   
   const { user, logout, isLoading: authLoading } = useAuth();
   const { personas, createPersona, updatePersona, deletePersona, isLoading: personasLoading, refetch: refetchPersonas } = usePersonas();
@@ -111,7 +117,7 @@ export default function Dashboard() {
   };
 
   const handleCreateTask = () => {
-    setEditingTask(null);
+    setEditingTask(undefined);
     setShowTaskModal(true);
   };
 
@@ -149,20 +155,31 @@ export default function Dashboard() {
     }
   };
 
-    // Update your handlePublishTask function
-  const handlePublishTask = async (task: Task) => {
+  // Updated to open the publishing modal instead of directly publishing
+  const handlePublishTask = (task: Task) => {
+    setSelectedTaskForPublishing(task);
+    setPublishModalOpen(true);
+  };
+
+  // New function to handle the publishing after modal submission
+  const handlePublishContent = async (publishData: any) => {
     try {
       // Show loading toast
-      const loadingToast = toast.loading('Publishing article...');
+      const loadingToast = toast.loading('Publishing content...');
       
       // First, convert the task to an article if it's not already
       const articleData = {
-        title: task.title,
-        content: task.description || '',
-        excerpt: task.description,
-        persona_id: task.assigned_persona_id,
+        title: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.title : '',
+        content: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description || '' : '',
+        excerpt: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description : '',
+        persona_id: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.assigned_persona_id : '',
         status: 'published',
-        // Add other fields as needed
+        // Add publishing-specific data
+        publishWebsite: publishData.publishWebsite,
+        publishSocial: publishData.publishSocial,
+        socialPlatforms: publishData.socialPlatforms,
+        scheduledTime: publishData.scheduleType === 'scheduled' ? publishData.scheduledTime : null,
+        socialContent: publishData.socialContent,
       };
       
       // Call your API to publish
@@ -173,19 +190,42 @@ export default function Dashboard() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to publish article');
+        throw new Error('Failed to publish content');
       }
       
-      // Update task status
-      await updateTask(task.id, { status: 'approved' });
+      // Handle social media posts if needed
+      if (publishData.publishSocial && publishData.socialPlatforms.length > 0) {
+        // Create social media posts
+        for (const platform of publishData.socialPlatforms) {
+          await createPost({
+            platform,
+            content: publishData.socialContent,
+            draft_id: publishData.taskId,
+            persona_id: tasks.find(t => t.id === publishData.taskId)?.assigned_persona_id || '',
+            hashtags: [], // Add this if your interface requires it
+            status: publishData.scheduleType === 'scheduled' ? 'scheduled' : 'draft',
+            target_time: publishData.scheduleType === 'scheduled' ? publishData.scheduledTime : undefined,
+          });
+        }
+      }
+      
+      // Update task status and set publishedTo and publishedAt
+      await updateTask(publishData.taskId, { 
+        status: 'approved',
+        publishedAt: publishData.scheduleType === 'now' ? new Date().toISOString() : undefined,
+        publishedTo: [
+          ...(publishData.publishWebsite ? ['website'] : []),
+          ...(publishData.publishSocial ? publishData.socialPlatforms : [])
+        ]
+      });
       
       // Dismiss loading toast and show success toast
       toast.dismiss(loadingToast);
-      toast.success('Task published successfully!', {
+      toast.success('Content published successfully!', {
         duration: 3000,
       });
     } catch (error) {
-      console.error('Failed to publish task:', error);
+      console.error('Failed to publish content:', error);
       toast.error('Failed to publish. Please try again.', {
         duration: 3000,
       });
@@ -200,8 +240,6 @@ export default function Dashboard() {
   };
 
   return (
-    
-    
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
@@ -216,7 +254,7 @@ export default function Dashboard() {
                 {user.name} ({user.organization?.name})
               </span>
               <Button variant="ghost" size="sm" onClick={logout}>
-                <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                <ArrowRightStartOnRectangleIcon className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -253,18 +291,6 @@ export default function Dashboard() {
                 {tab.name}
               </button>
             ))}
-            
-            {/* Remove this standalone Publishing button */}
-            {/* 
-            <button
-              onClick={() => {
-                window.location.href = '/publishing';
-              }}
-              className="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            >
-              Publishing
-            </button>
-            */}
           </div>
         </div>
       </nav>
@@ -427,7 +453,7 @@ export default function Dashboard() {
                 onTaskClick={handleEditTask}
                 onGenerateDraft={handleGenerateDraft}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
-                onPublishTask={handlePublishTask} // Add this
+                onPublishTask={handlePublishTask}
                 showBacklog={true}
               />
             )}
@@ -449,6 +475,7 @@ export default function Dashboard() {
                 onTaskClick={handleEditTask}
                 onGenerateDraft={handleGenerateDraft}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                onPublishTask={handlePublishTask}
                 showBacklog={false}
               />
             )}
@@ -523,6 +550,14 @@ export default function Dashboard() {
         isOpen={showDraftModal}
         onClose={() => setShowDraftModal(false)}
         draft={currentDraft}
+      />
+      
+      {/* Add the PublishingModal */}
+      <PublishingModal
+        isOpen={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        task={selectedTaskForPublishing}
+        onPublish={handlePublishContent}
       />
     </div>
   );

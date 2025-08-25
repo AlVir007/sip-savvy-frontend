@@ -1,231 +1,450 @@
-"use client";
+// src/components/TaskModal.tsx
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Task, Persona } from '@/types';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { 
+  GlobeAltIcon as GlobeIcon, 
+  ShareIcon, 
+  CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
+} from '@heroicons/react/24/outline';
+import { Checkbox } from '@/components/ui/checkbox';
+
+// Import your custom social media icons
+// Update this import path to match your project structure
+import { 
+  TwitterIcon,
+  InstagramIcon,
+  LinkedinIcon,
+} from './SocialChannelModal';
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (taskData: Partial<Task>) => Promise<void>;
+  onSave: (task: Partial<Task>) => void;
+  task?: Task;
   personas: Persona[];
-  task?: Task | null;
 }
 
-export function TaskModal({ isOpen, onClose, onSave, personas, task }: TaskModalProps) {
-  const [formData, setFormData] = useState({
-    title: '',
-    topic: '',
-    description: '',
-    type: 'blog' as 'feature' | 'news' | 'blog' | 'interview',
-    priority: 'medium' as 'low' | 'medium' | 'high',
-    assigned_persona_id: '',
-    ai_provider: 'openai' as 'openai' | 'anthropic' | 'grok',
-    due_date: '',
-    sources: [] as string[],
-  });
-  const [newSource, setNewSource] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
+export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModalProps) {
+  // Existing task state
+  const [title, setTitle] = useState('');
+  const [topic, setTopic] = useState('');
+  const [description, setDescription] = useState('');
+  const [taskType, setTaskType] = useState<Task['type']>('feature');
+  const [priority, setPriority] = useState<Task['priority']>('medium');
+  const [dueDate, setDueDate] = useState('');
+  const [assignedPersonaId, setAssignedPersonaId] = useState('');
+  const [sources, setSources] = useState('');
+  
+  // New publishing-related state
+  const [publishWebsite, setPublishWebsite] = useState(true);
+  const [publishSocial, setPublishSocial] = useState(false);
+  const [socialPlatforms, setSocialPlatforms] = useState<string[]>([]);
+  const [publishSchedule, setPublishSchedule] = useState<'immediately' | 'scheduled'>('immediately');
+  const [scheduledTime, setScheduledTime] = useState('');
+  
+  // State for section collapsing
+  const [publishingPlanOpen, setPublishingPlanOpen] = useState(true);
+  
+  // Initialize form when task changes
   useEffect(() => {
     if (task) {
-      setFormData({
-        title: task.title,
-        topic: task.topic || '',
-        description: task.description || '',
-        type: task.type,
-        priority: task.priority,
-        assigned_persona_id: task.assigned_persona_id || '',
-        ai_provider: task.ai_provider || 'openai',
-        due_date: task.due_date ? task.due_date.split('T')[0] : '',
-        sources: task.sources || [],
-      });
+      setTitle(task.title || '');
+      setTopic(task.topic || '');
+      setDescription(task.description || '');
+      setTaskType(task.type || 'feature');
+      setPriority(task.priority || 'medium');
+      setDueDate(task.due_date || '');
+      setAssignedPersonaId(task.assigned_persona_id || '');
+      setSources(task.sources ? task.sources.join('\n') : '');
+      
+      // Initialize publishing fields
+      setPublishWebsite(task.publishWebsite || true);
+      setPublishSocial(task.publishSocial || false);
+      setSocialPlatforms(task.socialPlatforms || []);
+      setPublishSchedule(task.publishSchedule || 'immediately');
+      setScheduledTime(task.scheduledTime || '');
     } else {
-      setFormData({
-        title: '',
-        topic: '',
-        description: '',
-        type: 'blog',
-        priority: 'medium',
-        assigned_persona_id: '',
-        ai_provider: 'openai',
-        due_date: '',
-        sources: [],
-      });
+      // Reset form for new task
+      setTitle('');
+      setTopic('');
+      setDescription('');
+      setTaskType('feature');
+      setPriority('medium');
+      setDueDate('');
+      setAssignedPersonaId('');
+      setSources('');
+      
+      // Default publishing options
+      setPublishWebsite(true);
+      setPublishSocial(false);
+      setSocialPlatforms([]);
+      setPublishSchedule('immediately');
+      setScheduledTime('');
     }
   }, [task]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      await onSave(formData);
-      onClose();
-    } catch (error) {
-      console.error('Failed to save task:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    
+    const taskData: Partial<Task> = {
+      title,
+      topic,
+      description,
+      type: taskType,
+      priority,
+      due_date: dueDate,
+      assigned_persona_id: assignedPersonaId,
+      sources: sources.split('\n').filter(s => s.trim() !== ''),
+      
+      // Add publishing fields
+      publishWebsite,
+      publishSocial,
+      socialPlatforms,
+      publishSchedule,
+      scheduledTime: publishSchedule === 'scheduled' ? scheduledTime : undefined,
+    };
+    
+    onSave(taskData);
   };
-
-  const addSource = () => {
-    if (newSource.trim() && !formData.sources.includes(newSource.trim())) {
-      setFormData({
-        ...formData,
-        sources: [...formData.sources, newSource.trim()],
-      });
-      setNewSource('');
-    }
+  
+  const handleSocialPlatformToggle = (platform: string) => {
+    setSocialPlatforms(prev => 
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    );
   };
-
-  const removeSource = (sourceToRemove: string) => {
-    setFormData({
-      ...formData,
-      sources: formData.sources.filter(source => source !== sourceToRemove),
-    });
-  };
-
+  
+  if (!isOpen) return null;
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader>
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <CardHeader className="border-b">
           <CardTitle>{task ? 'Edit Task' : 'Create New Task'}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              placeholder="Task Title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-            
-            <Input
-              placeholder="Topic"
-              value={formData.topic}
-              onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-            />
-            
-            <textarea
-              placeholder="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full p-3 border rounded-lg resize-none"
-              rows={3}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
+        
+        <div className="overflow-y-auto flex-1 p-6">
+          <form onSubmit={handleSubmit}>
+            {/* Existing task fields */}
+            <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Type</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="blog">Blog Post</option>
-                  <option value="news">News Article</option>
-                  <option value="feature">Feature Story</option>
-                  <option value="interview">Interview</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Priority</label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Assign to Persona</label>
-                <select
-                  value={formData.assigned_persona_id}
-                  onChange={(e) => setFormData({ ...formData, assigned_persona_id: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="">Unassigned</option>
-                  {personas.map((persona) => (
-                    <option key={persona.id} value={persona.id}>
-                      {persona.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">AI Provider</label>
-                <select
-                  value={formData.ai_provider}
-                  onChange={(e) => setFormData({ ...formData, ai_provider: e.target.value as any })}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="openai">OpenAI GPT-4</option>
-                  <option value="anthropic">Anthropic Claude</option>
-                  <option value="grok">Grok (X.AI)</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Due Date</label>
-              <Input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Sources & References</label>
-              <div className="flex space-x-2 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title*
+                </label>
                 <Input
-                  placeholder="Add source URL or reference"
-                  value={newSource}
-                  onChange={(e) => setNewSource(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSource())}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  placeholder="Task title"
                 />
-                <Button type="button" onClick={addSource} size="sm">
-                  Add
-                </Button>
               </div>
-              <div className="space-y-1">
-                {formData.sources.map((source, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-sm truncate">{source}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSource(source)}
-                      className="text-red-500 hover:text-red-700 ml-2"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Topic
+                </label>
+                <Input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Main topic"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Task description"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <Select 
+                    value={taskType} 
+                    onValueChange={(value) => setTaskType(value as Task['type'])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="feature">Feature</SelectItem>
+                      <SelectItem value="news">News</SelectItem>
+                      <SelectItem value="blog">Blog Post</SelectItem>
+                      <SelectItem value="interview">Interview</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <Select 
+                    value={priority} 
+                    onValueChange={(value) => setPriority(value as Task['priority'])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Due Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assign to Persona
+                  </label>
+                  <Select 
+                    value={assignedPersonaId} 
+                    onValueChange={setAssignedPersonaId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select persona" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {personas.map(persona => (
+                        <SelectItem key={persona.id} value={persona.id}>
+                          {persona.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sources (one per line)
+                </label>
+                <Textarea
+                  value={sources}
+                  onChange={(e) => setSources(e.target.value)}
+                  rows={3}
+                  placeholder="Enter sources (URLs, references, etc.)"
+                />
               </div>
             </div>
-
-            <div className="flex space-x-2">
-              <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? 'Saving...' : 'Save Task'}
-              </Button>
-              <Button type="button" variant="secondary" onClick={onClose}>
+            
+            {/* New Publication Plan Section - using simple collapsible instead of Accordion */}
+            <div className="border rounded-md mb-6">
+              <div 
+                className="p-4 border-b flex justify-between items-center cursor-pointer"
+                onClick={() => setPublishingPlanOpen(!publishingPlanOpen)}
+              >
+                <h3 className="text-lg font-medium">Publication Plan</h3>
+                {publishingPlanOpen ? (
+                  <ChevronUpIcon className="h-5 w-5" />
+                ) : (
+                  <ChevronDownIcon className="h-5 w-5" />
+                )}
+              </div>
+              
+              {publishingPlanOpen && (
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="publish-website"
+                      checked={publishWebsite}
+                      onCheckedChange={(checked) => setPublishWebsite(checked === true)}
+                    />
+                    <label 
+                      htmlFor="publish-website"
+                      className="text-sm font-medium flex items-center"
+                    >
+                      <GlobeIcon className="h-4 w-4 mr-2" />
+                      Publish as website article
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="publish-social"
+                      checked={publishSocial}
+                      onCheckedChange={(checked) => setPublishSocial(checked === true)}
+                    />
+                    <label 
+                      htmlFor="publish-social"
+                      className="text-sm font-medium flex items-center"
+                    >
+                      <ShareIcon className="h-4 w-4 mr-2" />
+                      Share on social media
+                    </label>
+                  </div>
+                  
+                  {publishSocial && (
+                    <div className="ml-7 grid grid-cols-2 gap-x-4 gap-y-2">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="platform-twitter"
+                          checked={socialPlatforms.includes('twitter')}
+                          onCheckedChange={() => handleSocialPlatformToggle('twitter')}
+                        />
+                        <label 
+                          htmlFor="platform-twitter"
+                          className="text-sm flex items-center"
+                        >
+                          <TwitterIcon className="h-4 w-4 mr-2" />
+                          Twitter
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="platform-facebook"
+                          checked={socialPlatforms.includes('facebook')}
+                          onCheckedChange={() => handleSocialPlatformToggle('facebook')}
+                        />
+                        <label 
+                          htmlFor="platform-facebook"
+                          className="text-sm flex items-center"
+                        >
+                          {/* If you don't have FacebookIcon, just use text */}
+                          Facebook
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="platform-linkedin"
+                          checked={socialPlatforms.includes('linkedin')}
+                          onCheckedChange={() => handleSocialPlatformToggle('linkedin')}
+                        />
+                        <label 
+                          htmlFor="platform-linkedin"
+                          className="text-sm flex items-center"
+                        >
+                          <LinkedinIcon className="h-4 w-4 mr-2" />
+                          LinkedIn
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="platform-instagram"
+                          checked={socialPlatforms.includes('instagram')}
+                          onCheckedChange={() => handleSocialPlatformToggle('instagram')}
+                        />
+                        <label 
+                          htmlFor="platform-instagram"
+                          className="text-sm flex items-center"
+                        >
+                          <InstagramIcon className="h-4 w-4 mr-2" />
+                          Instagram
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(publishWebsite || publishSocial) && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
+                      <h3 className="text-sm font-medium mb-3 flex items-center">
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        Publishing Schedule
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="publish-immediately"
+                            name="publish-schedule"
+                            checked={publishSchedule === 'immediately'}
+                            onChange={() => setPublishSchedule('immediately')}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <label htmlFor="publish-immediately" className="text-sm">
+                            Publish immediately after approval
+                          </label>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="publish-scheduled"
+                            name="publish-schedule"
+                            checked={publishSchedule === 'scheduled'}
+                            onChange={() => setPublishSchedule('scheduled')}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <label htmlFor="publish-scheduled" className="text-sm">
+                            Schedule for later
+                          </label>
+                        </div>
+                      </div>
+                      
+                      {publishSchedule === 'scheduled' && (
+                        <div className="mt-3">
+                          <Input
+                            type="datetime-local"
+                            value={scheduledTime}
+                            onChange={(e) => setScheduledTime(e.target.value)}
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
+              </Button>
+              <Button type="submit">
+                {task ? 'Update Task' : 'Create Task'}
               </Button>
             </div>
           </form>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
