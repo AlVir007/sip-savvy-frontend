@@ -1,19 +1,16 @@
 // src/components/publishing/editor/ArticleEditor.tsx
+import React from 'react';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-
+// Define the interface based on how the component is used in your application
 interface ArticleEditorProps {
-  content?: string;
-  onChange?: (content: string) => void;
+  // Essential properties for basic functionality
+  content: string;
+  onChange: (content: string) => void;
+  title: string;
+  onTitleChange: (title: string) => void;
+  
+  // Optional properties
   readOnly?: boolean;
-  title?: string;
-  onTitleChange?: (title: string) => void;
   metadata?: {
     excerpt?: string;
     featuredImage?: string;
@@ -21,110 +18,78 @@ interface ArticleEditorProps {
     tags?: any[];
   };
   onMetadataChange?: (metadata: any) => void;
-  onSave?: () => void;
-  isSaving?: boolean;
 }
 
-export function ArticleEditor({ 
-  content = '', 
-  onChange, 
-  readOnly = false,
-  title = '',
+// Export the ArticleEditor component - this is the key part that fixes the build issue
+export function ArticleEditor({
+  content,
+  onChange,
+  title,
   onTitleChange,
+  readOnly = false,
   metadata = {},
-  onMetadataChange,
-  onSave,
-  isSaving = false
+  onMetadataChange
 }: ArticleEditorProps) {
-  const [activeTab, setActiveTab] = useState("content");
-
   return (
-    <div className="article-editor space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>
-            <Input
-              type="text"
-              value={title}
-              onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
-              readOnly={readOnly}
-              placeholder="Article title..."
-              className="text-xl font-bold border-none shadow-none focus-visible:ring-0 px-0 h-auto"
-            />
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2">
-          <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="content" className="mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <Textarea
-                value={content}
-                onChange={(e) => onChange && onChange(e.target.value)}
-                readOnly={readOnly}
-                className="min-h-[400px] resize-y"
-                placeholder="Write your article content here..."
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="settings" className="mt-4">
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div>
-                <Label htmlFor="excerpt">Excerpt</Label>
-                <Textarea
-                  id="excerpt"
-                  value={metadata.excerpt || ''}
-                  onChange={(e) => onMetadataChange && onMetadataChange({ 
-                    ...metadata, 
-                    excerpt: e.target.value 
-                  })}
-                  readOnly={readOnly}
-                  className="h-20"
-                  placeholder="Short summary of the article..."
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="featured-image">Featured Image URL</Label>
-                <Input
-                  id="featured-image"
-                  type="text"
-                  value={metadata.featuredImage || ''}
-                  onChange={(e) => onMetadataChange && onMetadataChange({ 
-                    ...metadata, 
-                    featuredImage: e.target.value 
-                  })}
-                  readOnly={readOnly}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              
-              {/* We're not implementing the full category/tag UI for now */}
-              <div className="text-sm text-gray-500">
-                Categories and tags will be available in a future update.
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+    <div className="article-editor">
+      {/* Title field */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          className="w-full p-2 text-xl font-bold border-b focus:outline-none"
+          placeholder="Article Title"
+          readOnly={readOnly}
+        />
+      </div>
       
-      {onSave && (
-        <div className="flex justify-end">
-          <Button 
-            onClick={onSave} 
-            disabled={isSaving || readOnly}
-          >
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
+      {/* Content field */}
+      <div className="mb-4">
+        <textarea
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full p-2 min-h-[300px] border rounded-md"
+          placeholder="Write your article content here..."
+          readOnly={readOnly}
+        />
+      </div>
+      
+      {/* Metadata fields */}
+      {onMetadataChange && (
+        <div className="space-y-4 border-t pt-4">
+          <h3 className="font-medium">Article Settings</h3>
+          
+          {/* Excerpt */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Excerpt</label>
+            <textarea
+              value={metadata.excerpt || ''}
+              onChange={(e) => onMetadataChange({
+                ...metadata,
+                excerpt: e.target.value
+              })}
+              className="w-full p-2 h-20 border rounded-md"
+              placeholder="Brief summary of the article..."
+              readOnly={readOnly}
+            />
+          </div>
+          
+          {/* Featured Image */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Featured Image URL</label>
+            <input
+              type="text"
+              value={metadata.featuredImage || ''}
+              onChange={(e) => onMetadataChange({
+                ...metadata,
+                featuredImage: e.target.value
+              })}
+              className="w-full p-2 border rounded-md"
+              placeholder="https://example.com/image.jpg"
+              readOnly={readOnly}
+            />
+          </div>
         </div>
       )}
     </div>
