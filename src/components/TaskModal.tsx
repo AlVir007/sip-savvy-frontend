@@ -52,7 +52,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
   const [taskType, setTaskType] = useState<Task['type']>('feature');
   const [priority, setPriority] = useState<Task['priority']>('medium');
   const [dueDate, setDueDate] = useState('');
-  const [assignedPersonaId, setAssignedPersonaId] = useState('');
+  const [assignedPersonaId, setAssignedPersonaId] = useState('unassigned'); // Default to non-empty value
   const [sources, setSources] = useState('');
   
   // New publishing-related state
@@ -74,15 +74,15 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
       setTaskType(task.type || 'feature');
       setPriority(task.priority || 'medium');
       setDueDate(task.due_date || '');
-      setAssignedPersonaId(task.assigned_persona_id || '');
+      setAssignedPersonaId(task.assigned_persona_id || 'unassigned'); // Use non-empty default
       setSources(task.sources ? task.sources.join('\n') : '');
       
       // Initialize publishing fields
-      setPublishWebsite(task.publishWebsite || true);
-      setPublishSocial(task.publishSocial || false);
-      setSocialPlatforms(task.socialPlatforms || []);
-      setPublishSchedule(task.publishSchedule || 'immediately');
-      setScheduledTime(task.scheduledTime || '');
+      setPublishWebsite(task.publishWebsite ?? true);
+      setPublishSocial(task.publishSocial ?? false);
+      setSocialPlatforms(task.socialPlatforms ?? []);
+      setPublishSchedule(task.publishSchedule ?? 'immediately');
+      setScheduledTime(task.scheduledTime ?? '');
     } else {
       // Reset form for new task
       setTitle('');
@@ -91,7 +91,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
       setTaskType('feature');
       setPriority('medium');
       setDueDate('');
-      setAssignedPersonaId('');
+      setAssignedPersonaId('unassigned'); // Use non-empty default
       setSources('');
       
       // Default publishing options
@@ -101,7 +101,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
       setPublishSchedule('immediately');
       setScheduledTime('');
     }
-  }, [task]);
+  }, [task, isOpen]); // Added isOpen to the dependency array to reset on open/close
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +113,8 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
       type: taskType,
       priority,
       due_date: dueDate,
-      assigned_persona_id: assignedPersonaId,
+      // Convert 'unassigned' back to empty string/null for API
+      assigned_persona_id: assignedPersonaId === 'unassigned' ? '' : assignedPersonaId,
       sources: sources.split('\n').filter(s => s.trim() !== ''),
       
       // Add publishing fields
@@ -248,7 +249,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
                       <SelectValue placeholder="Select persona" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="unassigned">None</SelectItem>
                       {personas.map(persona => (
                         <SelectItem key={persona.id} value={persona.id}>
                           {persona.name}
