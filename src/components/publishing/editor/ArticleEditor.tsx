@@ -1,15 +1,12 @@
 // src/components/publishing/editor/ArticleEditor.tsx
 import React from 'react';
 
-// Define the interface based on how the component is used in your application
+// Make all properties optional
 interface ArticleEditorProps {
-  // Essential properties for basic functionality
-  content: string;
-  onChange: (content: string) => void;
-  title: string;
-  onTitleChange: (title: string) => void;
-  
-  // Optional properties
+  content?: string;
+  onChange?: (content: string) => void;
+  title?: string;
+  onTitleChange?: (title: string) => void;
   readOnly?: boolean;
   metadata?: {
     excerpt?: string;
@@ -20,12 +17,12 @@ interface ArticleEditorProps {
   onMetadataChange?: (metadata: any) => void;
 }
 
-// Export the ArticleEditor component - this is the key part that fixes the build issue
+// Provide default values for all props
 export function ArticleEditor({
-  content,
-  onChange,
-  title,
-  onTitleChange,
+  content = '',
+  onChange = () => {},
+  title = '',
+  onTitleChange = () => {},
   readOnly = false,
   metadata = {},
   onMetadataChange
