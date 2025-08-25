@@ -21,8 +21,9 @@ import { DraftModal } from '@/components/DraftModal';
 import { Persona, Task } from '@/types';
 import { useSocialPosts } from '@/hooks/useSocialPosts';
 import SocialChannelsSection from '@/components/SocialChannelsSection';
-// Import the PublishingModal component
 import { PublishingModal } from '@/components/publishing/PublishingModal';
+// Import the utility function (you'll need to create this file)
+import { moveDraftToPublishing, getDraftByTaskId } from '@/lib/moveToPublishing';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -40,8 +41,8 @@ export default function Dashboard() {
   
   const { user, logout, isLoading: authLoading } = useAuth();
   const { personas, createPersona, updatePersona, deletePersona, isLoading: personasLoading, refetch: refetchPersonas } = usePersonas();
-  const { tasks, createTask, updateTask, deleteTask, generateDraft, isLoading: tasksLoading } = useTasks();
-  const { drafts } = useDrafts();
+  const { tasks, createTask, updateTask, deleteTask, generateDraft, isLoading: tasksLoading, refetch: refetchTasks } = useTasks();
+  const { drafts, updateDraft, refetch: refetchDrafts } = useDrafts();
   const { posts: socialPosts, createPost, generateFromDraft, isLoading: socialLoading } = useSocialPosts();
 
   interface SocialConnectionData {
@@ -155,42 +156,126 @@ export default function Dashboard() {
     }
   };
 
-  // Updated to open the publishing modal instead of directly publishing
-  const handlePublishTask = (task: Task) => {
-    setSelectedTaskForPublishing(task);
-    setPublishModalOpen(true);
+  // NEW: Handle draft approval
+  const handleApproveDraft = async (draftId: string) => {
+    try {
+      // First, get the draft to be approved
+      const draft = drafts.find(d => d.id === draftId);
+      
+      if (!draft) {
+        toast.error('Draft not found');
+        return;
+      }
+      
+      // Note: Draft interface doesn't have status, so we skip updating draft status
+      toast.success('Draft approved successfully');
+      
+      // Move the draft to the publishing section
+      await moveDraftToPublishing(draft, 'draft');
+      toast.success('Draft moved to Publishing section');
+      
+      // Update related task status if needed
+      if (draft.task_id) {
+        await updateTask(draft.task_id, { status: 'approved' });
+      }
+      
+      // Refresh drafts and tasks
+      await refetchDrafts();
+      await refetchTasks();
+      
+    } catch (error) {
+      console.error('Failed to approve draft:', error);
+      toast.error('Failed to approve draft');
+    }
   };
 
-  // New function to handle the publishing after modal submission
+  // NEW: Handle draft rejection
+  const handleRejectDraft = async (draftId: string) => {
+    try {
+      // Note: Draft interface doesn't have status, so we skip updating draft status
+      toast.success('Draft rejected');
+      
+      // Find the associated task to update its status
+      const draft = drafts.find(d => d.id === draftId);
+      if (draft?.task_id) {
+        await updateTask(draft.task_id, { status: 'in-progress' });
+      }
+      
+      await refetchDrafts();
+      await refetchTasks();
+    } catch (error) {
+      console.error('Failed to reject draft:', error);
+      toast.error('Failed to reject draft');
+    }
+  };
+
+  // Updated to open the publishing modal
+  const handlePublishTask = async (task: Task) => {
+    try {
+      // Try to get the draft associated with this task
+      const draft = await getDraftByTaskId(task.id);
+      
+      if (!draft) {
+        toast.error('No draft found for this task');
+        return;
+      }
+      
+      // Show the publishing modal
+      setSelectedTaskForPublishing(task);
+      setCurrentDraft(draft);
+      setPublishModalOpen(true);
+      
+    } catch (error) {
+      console.error('Failed to prepare for publishing:', error);
+      toast.error('Failed to prepare for publishing');
+      
+      // Fallback to just showing the modal with the task
+      setSelectedTaskForPublishing(task);
+      setPublishModalOpen(true);
+    }
+  };
+
+  // Updated to use the utility function
   const handlePublishContent = async (publishData: any) => {
     try {
       // Show loading toast
       const loadingToast = toast.loading('Publishing content...');
       
-      // First, convert the task to an article if it's not already
-      const articleData = {
-        title: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.title : '',
-        content: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description || '' : '',
-        excerpt: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description : '',
-        persona_id: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.assigned_persona_id : '',
-        status: 'published',
-        // Add publishing-specific data
-        publishWebsite: publishData.publishWebsite,
-        publishSocial: publishData.publishSocial,
-        socialPlatforms: publishData.socialPlatforms,
-        scheduledTime: publishData.scheduleType === 'scheduled' ? publishData.scheduledTime : null,
-        socialContent: publishData.socialContent,
-      };
+      // Try to get the draft associated with the task
+      let draft;
+      try {
+        draft = await getDraftByTaskId(publishData.taskId);
+      } catch (error) {
+        console.error('Error fetching draft:', error);
+      }
       
-      // Call your API to publish
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(articleData),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to publish content');
+      if (draft) {
+        // If we have a draft, use it to create the article
+        await moveDraftToPublishing(draft, 'published');
+      } else {
+        // Fallback to the existing direct API call method
+        const articleData = {
+          title: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.title : '',
+          content: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description || '' : '',
+          excerpt: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.description : '',
+          persona_id: publishData.taskId ? tasks.find(t => t.id === publishData.taskId)?.assigned_persona_id : '',
+          status: 'published',
+          publishWebsite: publishData.publishWebsite,
+          publishSocial: publishData.publishSocial,
+          socialPlatforms: publishData.socialPlatforms,
+          scheduledTime: publishData.scheduleType === 'scheduled' ? publishData.scheduledTime : null,
+          socialContent: publishData.socialContent,
+        };
+        
+        const response = await fetch('/api/articles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(articleData),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to publish content');
+        }
       }
       
       // Handle social media posts if needed
@@ -200,7 +285,7 @@ export default function Dashboard() {
           await createPost({
             platform,
             content: publishData.socialContent,
-            draft_id: publishData.taskId,
+            draft_id: draft?.id || publishData.taskId,
             persona_id: tasks.find(t => t.id === publishData.taskId)?.assigned_persona_id || '',
             hashtags: [], // Add this if your interface requires it
             status: publishData.scheduleType === 'scheduled' ? 'scheduled' : 'draft',
@@ -224,6 +309,11 @@ export default function Dashboard() {
       toast.success('Content published successfully!', {
         duration: 3000,
       });
+      
+      // Refresh data
+      await refetchTasks();
+      await refetchDrafts();
+      
     } catch (error) {
       console.error('Failed to publish content:', error);
       toast.error('Failed to publish. Please try again.', {
@@ -546,13 +636,15 @@ export default function Dashboard() {
         task={editingTask}
       />
 
+      {/* Updated to pass onApprove and onReject */}
       <DraftModal
         isOpen={showDraftModal}
         onClose={() => setShowDraftModal(false)}
         draft={currentDraft}
+        onApprove={handleApproveDraft}
+        onReject={handleRejectDraft}
       />
       
-      {/* Add the PublishingModal */}
       <PublishingModal
         isOpen={publishModalOpen}
         onClose={() => setPublishModalOpen(false)}

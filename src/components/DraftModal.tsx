@@ -6,16 +6,23 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArticlePreview } from '@/components/publishing/preview/ArticlePreview';
+import { toast } from 'react-hot-toast';
 
 interface Draft {
   id: string;
+  task_id?: string;
+  persona_id?: string;
   title: string;
   summary?: string;
   body?: string;
   content?: string; // For compatibility with ArticlePreview
   excerpt?: string; // For compatibility with ArticlePreview
   featured_image?: string;
-  persona?: { name: string; profile_picture?: string };
+  persona?: { 
+    id?: string;
+    name: string; 
+    profile_picture?: string 
+  };
   categories?: Array<{ id: number; name: string; color?: string }>;
   tags?: Array<{ id: number; name: string }>;
   readability_score?: {
@@ -26,6 +33,7 @@ interface Draft {
     word_count: number;
     estimated_read_time: number;
   };
+  status?: string;
 }
 
 interface DraftModalProps {
@@ -43,26 +51,38 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
   if (!isOpen || !draft) return null;
 
   const handleApprove = async () => {
-    if (!onApprove) return;
+    if (!onApprove) {
+      toast.error('Approval functionality not available');
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       await onApprove(draft.id);
+      toast.success('Draft approved and moved to Publishing');
       onClose();
     } catch (error) {
       console.error('Failed to approve draft:', error);
+      toast.error('Failed to approve draft');
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleReject = async () => {
-    if (!onReject) return;
+    if (!onReject) {
+      toast.error('Reject functionality not available');
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       await onReject(draft.id);
+      toast.success('Draft rejected');
       onClose();
     } catch (error) {
       console.error('Failed to reject draft:', error);
+      toast.error('Failed to reject draft');
     } finally {
       setIsProcessing(false);
     }
@@ -89,6 +109,10 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
     
     return html;
   };
+
+  // Determine if the draft is already approved
+  const isApproved = draft.status === 'approved';
+  const isRejected = draft.status === 'rejected';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -117,13 +141,22 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
                 {draft.readability_score.level} Level ({draft.readability_score.score}%)
               </span>
             )}
+            {draft.status && (
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                draft.status === 'approved' ? 'bg-green-100 text-green-800' :
+                draft.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {draft.status.charAt(0).toUpperCase() + draft.status.slice(1)}
+              </span>
+            )}
           </div>
         </CardHeader>
         
         <CardContent className="flex-1 overflow-y-auto p-6">
           <Tabs defaultValue="edit" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="mb-4">
-              <TabsTrigger value="edit">Edit</TabsTrigger>
+              <TabsTrigger value="edit">Content</TabsTrigger>
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
             
@@ -167,7 +200,7 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
         
         {(onApprove || onReject) && (
           <div className="border-t p-4 flex space-x-3">
-            {onApprove && (
+            {onApprove && !isApproved && !isRejected && (
               <Button 
                 onClick={handleApprove} 
                 disabled={isProcessing}
@@ -177,7 +210,7 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
                 {isProcessing ? 'Approving...' : 'Approve Draft'}
               </Button>
             )}
-            {onReject && (
+            {onReject && !isRejected && !isApproved && (
               <Button 
                 variant="destructive" 
                 onClick={handleReject} 
@@ -187,6 +220,18 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
                 <XMarkIcon className="w-4 h-4 mr-2" />
                 {isProcessing ? 'Rejecting...' : 'Reject Draft'}
               </Button>
+            )}
+            {isApproved && (
+              <div className="flex-1 text-green-600 flex items-center">
+                <CheckIcon className="w-4 h-4 mr-2" />
+                This draft has been approved and moved to Publishing
+              </div>
+            )}
+            {isRejected && (
+              <div className="flex-1 text-red-600 flex items-center">
+                <XMarkIcon className="w-4 h-4 mr-2" />
+                This draft has been rejected
+              </div>
             )}
             <Button variant="secondary" onClick={onClose}>
               Close

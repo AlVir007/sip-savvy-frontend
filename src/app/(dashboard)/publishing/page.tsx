@@ -8,7 +8,7 @@ import { useArticles } from '@/hooks/publishing/useArticles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  PlusCircle, Edit, Trash2, Eye, Star, Clock, ArrowLeft
+  Edit, Trash2, Eye, Star, Clock, ArrowLeft, Lightbulb
 } from 'lucide-react';
 import {
   Select,
@@ -55,12 +55,7 @@ export default function PublishingPage() {
             </Link>
             <h1 className="text-2xl font-bold">Publishing</h1>
           </div>
-          <Link href="/publishing/new">
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Article
-            </Button>
-          </Link>
+          {/* Removed "New Article" button to enforce the Task → Draft → Publishing workflow */}
         </div>
 
         {/* Filter controls in a card for better visual hierarchy */}
@@ -112,10 +107,15 @@ export default function PublishingPage() {
           <Card>
             <CardContent className="p-12">
               <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">No articles found.</p>
-                <Link href="/publishing/new">
-                  <Button variant="outline">
-                    Create your first article
+                <Lightbulb className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No articles in Publishing yet</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Articles appear here when tasks have been completed and drafts have been approved. 
+                  Start by creating a task and moving it through the workflow.
+                </p>
+                <Link href="/">
+                  <Button variant="default">
+                    Go to Dashboard
                   </Button>
                 </Link>
               </div>

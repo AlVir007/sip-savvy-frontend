@@ -1,4 +1,4 @@
-// src/components/publishing/PublishingModal.tsx
+/// src/components/publishing/PublishingModal.tsx
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -9,7 +9,8 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea'; // Add this import
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Task } from '@/types';
 import { 
   GlobeAltIcon,
@@ -21,15 +22,16 @@ interface PublishingModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task | null;
+  article?: any; // Optional article parameter for the publishing page
   onPublish: (data: any) => Promise<void>;
 }
 
-export function PublishingModal({ isOpen, onClose, task, onPublish }: PublishingModalProps) {
+export function PublishingModal({ isOpen, onClose, task, article, onPublish }: PublishingModalProps) {
   const [activeTab, setActiveTab] = useState('website');
   const [isPublishing, setIsPublishing] = useState(false);
   
-  // Initialize from task data
-  const [publishWebsite, setPublishWebsite] = useState(false);
+  // Initialize from task or article data
+  const [publishWebsite, setPublishWebsite] = useState(true);
   const [publishSocial, setPublishSocial] = useState(false);
   const [socialPlatforms, setSocialPlatforms] = useState<string[]>([]);
   const [scheduleType, setScheduleType] = useState<'now' | 'scheduled'>('now');
@@ -39,24 +41,27 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
   const [socialContent, setSocialContent] = useState('');
   
   useEffect(() => {
-    if (task) {
-      setPublishWebsite(task.publishWebsite || true);
-      setPublishSocial(task.publishSocial || false);
-      setSocialPlatforms(task.socialPlatforms || []);
-      setScheduleType(task.publishSchedule === 'scheduled' ? 'scheduled' : 'now');
-      setScheduledTime(task.scheduledTime || '');
+    // Initialize from either task or article
+    const source = task || article;
+    
+    if (source) {
+      setPublishWebsite(source.publishWebsite ?? true);
+      setPublishSocial(source.publishSocial ?? false);
+      setSocialPlatforms(source.socialPlatforms || []);
+      setScheduleType(source.publishSchedule === 'scheduled' ? 'scheduled' : 'now');
+      setScheduledTime(source.scheduledTime || '');
       
-      // Generate default social content based on task
-      setSocialContent(`Check out our new article: ${task.title} #content #article`);
+      // Generate default social content based on title
+      setSocialContent(`Check out our new article: ${source.title || 'New Article'} #content #article`);
       
       // Set active tab based on publishing intent
-      if (task.publishWebsite) {
+      if (source.publishWebsite) {
         setActiveTab('website');
-      } else if (task.publishSocial) {
+      } else if (source.publishSocial) {
         setActiveTab('social');
       }
     }
-  }, [task]);
+  }, [task, article]);
   
   const handleSocialPlatformToggle = (platform: string) => {
     setSocialPlatforms(prev => 
@@ -67,13 +72,14 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
   };
   
   const handlePublish = async () => {
-    if (!task) return;
+    if (!task && !article) return;
     
     setIsPublishing(true);
     
     try {
       const publishData = {
-        taskId: task.id,
+        taskId: task?.id,
+        articleId: article?.id,
         publishWebsite,
         publishSocial,
         socialPlatforms,
@@ -91,6 +97,10 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
       setIsPublishing(false);
     }
   };
+  
+  // Get title and description/content from the source
+  const title = task?.title || article?.title || '';
+  const description = task?.description || article?.excerpt || article?.content?.replace(/<[^>]*>/g, '').slice(0, 150) + '...';
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -138,13 +148,13 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                 checked={publishWebsite}
                 onCheckedChange={(checked) => setPublishWebsite(checked === true)}
               />
-              <label 
+              <Label 
                 htmlFor="publish-website-modal"
                 className="text-sm font-medium flex items-center"
               >
                 <GlobeAltIcon className="h-4 w-4 mr-2" />
                 Publish as website article
-              </label>
+              </Label>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -153,13 +163,13 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                 checked={publishSocial}
                 onCheckedChange={(checked) => setPublishSocial(checked === true)}
               />
-              <label 
+              <Label 
                 htmlFor="publish-social-modal"
                 className="text-sm font-medium flex items-center"
               >
                 <ShareIcon className="h-4 w-4 mr-2" />
                 Share on social media
-              </label>
+              </Label>
             </div>
           </div>
           
@@ -171,8 +181,8 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                 <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
                   <h3 className="text-sm font-medium mb-2">Article Preview</h3>
                   <div className="bg-white rounded-md p-3 border border-gray-200">
-                    <h4 className="font-bold">{task?.title}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{task?.description}</p>
+                    <h4 className="font-bold">{title}</h4>
+                    <p className="text-sm text-gray-600 mt-1">{description}</p>
                   </div>
                 </div>
               )}
@@ -191,12 +201,12 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                           checked={socialPlatforms.includes('twitter')}
                           onCheckedChange={() => handleSocialPlatformToggle('twitter')}
                         />
-                        <label 
+                        <Label 
                           htmlFor="platform-twitter-modal"
                           className="text-sm"
                         >
                           Twitter
-                        </label>
+                        </Label>
                       </div>
                       
                       <div className="flex items-center space-x-2">
@@ -205,12 +215,12 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                           checked={socialPlatforms.includes('facebook')}
                           onCheckedChange={() => handleSocialPlatformToggle('facebook')}
                         />
-                        <label 
+                        <Label 
                           htmlFor="platform-facebook-modal"
                           className="text-sm"
                         >
                           Facebook
-                        </label>
+                        </Label>
                       </div>
                       
                       <div className="flex items-center space-x-2">
@@ -219,12 +229,12 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                           checked={socialPlatforms.includes('linkedin')}
                           onCheckedChange={() => handleSocialPlatformToggle('linkedin')}
                         />
-                        <label 
+                        <Label 
                           htmlFor="platform-linkedin-modal"
                           className="text-sm"
                         >
                           LinkedIn
-                        </label>
+                        </Label>
                       </div>
                       
                       <div className="flex items-center space-x-2">
@@ -233,12 +243,12 @@ export function PublishingModal({ isOpen, onClose, task, onPublish }: Publishing
                           checked={socialPlatforms.includes('instagram')}
                           onCheckedChange={() => handleSocialPlatformToggle('instagram')}
                         />
-                        <label 
+                        <Label 
                           htmlFor="platform-instagram-modal"
                           className="text-sm"
                         >
                           Instagram
-                        </label>
+                        </Label>
                       </div>
                     </div>
                   </div>
