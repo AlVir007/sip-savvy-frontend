@@ -1,4 +1,3 @@
-// src/components/TaskModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -42,9 +41,10 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void;
   task?: Task;
   personas: Persona[];
+  onPublish?: (taskId: string) => void;
 }
 
-export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSave, task, personas, onPublish }: TaskModalProps) {
   // Existing task state
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
@@ -163,13 +163,17 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
     );
   };
   
+  // Determine if the task has an associated draft and if it's approved
+  const hasDraft = task?.status && ['in-progress', 'needs-review', 'approved', 'published'].includes(task.status);
+  const isApproved = task?.status === 'approved';
+  
   if (!isOpen) return null;
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <CardHeader className="border-b">
-          <CardTitle>{task ? 'Edit Task' : 'Create New Task'}</CardTitle>
+          <CardTitle>{task ? (hasDraft ? 'Edit Draft' : 'Edit Task') : 'Create New Task'}</CardTitle>
         </CardHeader>
         
         <div className="overflow-y-auto flex-1 p-6">
@@ -467,8 +471,29 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
+              
+              {/* Conditionally show Publish button for approved drafts */}
+              {isApproved && hasDraft && onPublish && (
+                <Button 
+                  type="button"
+                  onClick={() => {
+                    if (task && onPublish) {
+                      onPublish(task.id);
+                    }
+                    onClose();
+                  }}
+                >
+                  Publish
+                </Button>
+              )}
+              
               <Button type="submit">
-                {task ? 'Update Task' : 'Create Task'}
+                {task 
+                  ? hasDraft 
+                    ? 'Update Draft' 
+                    : 'Update Task'
+                  : 'Create Task'
+                }
               </Button>
             </div>
           </form>

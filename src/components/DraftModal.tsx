@@ -42,9 +42,10 @@ interface DraftModalProps {
   draft: Draft | null;
   onApprove?: (draftId: string) => void;
   onReject?: (draftId: string) => void;
+  onPublish?: (draftId: string) => void;
 }
 
-export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: DraftModalProps) {
+export function DraftModal({ isOpen, onClose, draft, onApprove, onReject, onPublish }: DraftModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState("edit");
 
@@ -83,6 +84,25 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
     } catch (error) {
       console.error('Failed to reject draft:', error);
       toast.error('Failed to reject draft');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!onPublish) {
+      toast.error('Publish functionality not available');
+      return;
+    }
+    
+    setIsProcessing(true);
+    try {
+      await onPublish(draft.id);
+      toast.success('Draft published successfully');
+      onClose();
+    } catch (error) {
+      console.error('Failed to publish draft:', error);
+      toast.error('Failed to publish draft');
     } finally {
       setIsProcessing(false);
     }
@@ -198,46 +218,63 @@ export function DraftModal({ isOpen, onClose, draft, onApprove, onReject }: Draf
           </Tabs>
         </CardContent>
         
-        {(onApprove || onReject) && (
-          <div className="border-t p-4 flex space-x-3">
-            {onApprove && !isApproved && !isRejected && (
-              <Button 
-                onClick={handleApprove} 
-                disabled={isProcessing}
-                className="flex-1"
-              >
-                <CheckIcon className="w-4 h-4 mr-2" />
-                {isProcessing ? 'Approving...' : 'Approve Draft'}
-              </Button>
-            )}
-            {onReject && !isRejected && !isApproved && (
-              <Button 
-                variant="destructive" 
-                onClick={handleReject} 
-                disabled={isProcessing}
-                className="flex-1"
-              >
-                <XMarkIcon className="w-4 h-4 mr-2" />
-                {isProcessing ? 'Rejecting...' : 'Reject Draft'}
-              </Button>
-            )}
-            {isApproved && (
-              <div className="flex-1 text-green-600 flex items-center">
-                <CheckIcon className="w-4 h-4 mr-2" />
-                This draft has been approved and moved to Publishing
-              </div>
-            )}
-            {isRejected && (
-              <div className="flex-1 text-red-600 flex items-center">
-                <XMarkIcon className="w-4 h-4 mr-2" />
-                This draft has been rejected
-              </div>
-            )}
-            <Button variant="secondary" onClick={onClose}>
-              Close
+        <div className="border-t p-4 flex space-x-3">
+          {/* Approval button - show only if not approved/rejected */}
+          {onApprove && !isApproved && !isRejected && (
+            <Button 
+              onClick={handleApprove} 
+              disabled={isProcessing}
+              className="flex-1"
+            >
+              <CheckIcon className="w-4 h-4 mr-2" />
+              {isProcessing ? 'Approving...' : 'Approve Draft'}
             </Button>
-          </div>
-        )}
+          )}
+          
+          {/* Reject button - show only if not rejected/approved */}
+          {onReject && !isRejected && !isApproved && (
+            <Button 
+              variant="destructive" 
+              onClick={handleReject} 
+              disabled={isProcessing}
+              className="flex-1"
+            >
+              <XMarkIcon className="w-4 h-4 mr-2" />
+              {isProcessing ? 'Rejecting...' : 'Reject Draft'}
+            </Button>
+          )}
+          
+          {/* Publish button - show only for approved drafts */}
+          {onPublish && isApproved && (
+            <Button 
+              onClick={handlePublish} 
+              disabled={isProcessing}
+              className="flex-1"
+            >
+              {isProcessing ? 'Publishing...' : 'Publish Draft'}
+            </Button>
+          )}
+          
+          {/* Status messages */}
+          {isApproved && !onPublish && (
+            <div className="flex-1 text-green-600 flex items-center">
+              <CheckIcon className="w-4 h-4 mr-2" />
+              This draft has been approved and moved to Publishing
+            </div>
+          )}
+          
+          {isRejected && (
+            <div className="flex-1 text-red-600 flex items-center">
+              <XMarkIcon className="w-4 h-4 mr-2" />
+              This draft has been rejected
+            </div>
+          )}
+          
+          {/* Close button */}
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </Card>
     </div>
   );
