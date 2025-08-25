@@ -127,11 +127,31 @@ export default function Dashboard() {
     setShowTaskModal(true);
   };
 
+  const [isSavingTask, setIsSavingTask] = useState(false);
+
   const handleSaveTask = async (taskData: Partial<Task>) => {
-    if (editingTask) {
-      await updateTask(editingTask.id, taskData);
-    } else {
-      await createTask(taskData);
+    if (isSavingTask) return; // Prevent multiple submissions
+    
+    try {
+      setIsSavingTask(true);
+      
+      if (editingTask) {
+        await updateTask(editingTask.id, taskData);
+        toast.success('Task updated successfully!');
+      } else {
+        await createTask(taskData);
+        toast.success('Task created successfully!');
+      }
+      
+      setShowTaskModal(false);
+      setEditingTask(undefined);
+      await refetchTasks();
+      
+    } catch (error) {
+      console.error('Failed to save task:', error);
+      toast.error('Failed to save task. Please try again.');
+    } finally {
+      setIsSavingTask(false);
     }
   };
 

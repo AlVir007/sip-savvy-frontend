@@ -38,12 +38,39 @@ export function useTasks() {
         throw new Error('Task not found');
       }
       
-      // Merge current task data with updates to ensure required fields are present
+      // Merge current task data with updates to ensure ALL required fields are present
       const updateData = {
+        // Required fields that must always be present
+        id: currentTask.id,
+        organization_id: currentTask.organization_id,
+        assigned_by: currentTask.assigned_by,
         title: currentTask.title,
+        sources: currentTask.sources,
         type: currentTask.type,
+        status: currentTask.status,
         priority: currentTask.priority,
-        ...taskData // Override with new data
+        created_at: currentTask.created_at,
+        updated_at: currentTask.updated_at,
+        
+        // Optional fields that might be updated
+        assigned_persona_id: currentTask.assigned_persona_id,
+        topic: currentTask.topic,
+        description: currentTask.description,
+        section: currentTask.section,
+        due_date: currentTask.due_date,
+        ai_provider: currentTask.ai_provider,
+        
+        // Publishing fields
+        publishWebsite: currentTask.publishWebsite,
+        publishSocial: currentTask.publishSocial,
+        socialPlatforms: currentTask.socialPlatforms,
+        publishSchedule: currentTask.publishSchedule,
+        scheduledTime: currentTask.scheduledTime,
+        publishedAt: currentTask.publishedAt,
+        publishedTo: currentTask.publishedTo,
+        
+        // Override with new data
+        ...taskData
       };
       
       const response = await api.put(`/tasks/${id}`, updateData);

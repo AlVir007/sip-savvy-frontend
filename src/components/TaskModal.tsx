@@ -65,6 +65,33 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
   // State for section collapsing
   const [publishingPlanOpen, setPublishingPlanOpen] = useState(true);
   
+  // Add this helper function at the top of the component
+  const formatDateForInput = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return date.toISOString().split('T')[0]; // Returns "yyyy-MM-dd"
+    } catch {
+      return '';
+    }
+  };
+
+  const formatDateTimeForInput = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      // Convert to local datetime-local format
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch {
+      return '';
+    }
+  };
+
   // Initialize form when task changes
   useEffect(() => {
     if (task) {
@@ -73,7 +100,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
       setDescription(task.description || '');
       setTaskType(task.type || 'feature');
       setPriority(task.priority || 'medium');
-      setDueDate(task.due_date || '');
+      setDueDate(formatDateForInput(task.due_date));
       setAssignedPersonaId(task.assigned_persona_id || 'unassigned'); // Use non-empty default
       setSources(task.sources ? task.sources.join('\n') : '');
       
@@ -82,7 +109,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, personas }: TaskModal
       setPublishSocial(task.publishSocial ?? false);
       setSocialPlatforms(task.socialPlatforms ?? []);
       setPublishSchedule(task.publishSchedule ?? 'immediately');
-      setScheduledTime(task.scheduledTime ?? '');
+      setScheduledTime(formatDateTimeForInput(task.scheduledTime));
     } else {
       // Reset form for new task
       setTitle('');
