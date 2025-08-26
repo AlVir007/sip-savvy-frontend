@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://app.sipandsavvy.com/api',
+  // Update baseURL to use the proxy
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://app.sipandsavvy.com/api-proxy.php',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

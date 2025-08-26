@@ -62,7 +62,7 @@ export function useTasks() {
         created_at: currentTask.created_at, // Ensure created_at never changes
         
         // Ensure required fields are never missing by using nullish coalescing
-        type: taskData.type ?? currentTask.type,
+        type: (taskData.type && taskData.type.trim() !== '') ? taskData.type : currentTask.type,
         title: taskData.title ?? currentTask.title,
         sources: taskData.sources ?? currentTask.sources,
         priority: taskData.priority ?? currentTask.priority,

@@ -41,18 +41,21 @@ export async function moveDraftToPublishing(
       console.log(`Draft ${draft.id} moved to publishing as article ${response.data.id}`);
 
       return response.data;
-    } catch (error) {
-      console.error('API error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers,
-        config: error.config
-      });
+    } catch (error: unknown) {
+      const errorDetails = {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        response: (error as any)?.response?.data || 'No response data',
+        status: (error as any)?.response?.status || 'No status',
+        headers: (error as any)?.response?.headers || 'No headers',
+        config: (error as any)?.config || 'No config'
+      };
+      
+      console.error('API error details:', errorDetails);
       throw error;
     }
-  } catch (error) {
-    console.error('Failed to move draft to publishing:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Failed to move draft to publishing:', errorMessage);
     throw error;
   }
 }
@@ -69,8 +72,9 @@ export async function getDraftByTaskId(taskId: string) {
       return response.data[0];
     }
     throw new Error('No draft found for this task');
-  } catch (error) {
-    console.error('Failed to get draft for task:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('Failed to get draft for task:', errorMessage);
     throw error;
   }
 }
