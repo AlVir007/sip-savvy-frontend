@@ -14,9 +14,11 @@ export async function moveDraftToPublishing(
   status: 'draft' | 'review' | 'published' = 'draft'
 ) {
   try {
+    console.log('Starting publishing process for draft:', draft);
+    
     // Convert draft data to article format
     const articleData: ArticleInput = {
-      title: draft.title,
+      title: draft.title || 'Untitled',
       excerpt: draft.summary || '',
       content: draft.body || '',
       featured_image: '',
@@ -26,15 +28,29 @@ export async function moveDraftToPublishing(
       categories: [],
       tags: [] // Draft has string[] tags, but ArticleInput expects number[] tags
     };
+    
+    console.log('Prepared article data:', articleData);
 
     // Create the article in the publishing section
-    const response = await api.post('/articles', articleData);
-    
-    // Note: Draft interface doesn't have status, so we skip updating draft
-    // The draft is now represented as an article in the publishing section
-    console.log(`Draft ${draft.id} moved to publishing as article ${response.data.id}`);
+    try {
+      const response = await api.post('/articles', articleData);
+      console.log('Publish success! Response:', response.data);
+      
+      // Note: Draft interface doesn't have status, so we skip updating draft
+      // The draft is now represented as an article in the publishing section
+      console.log(`Draft ${draft.id} moved to publishing as article ${response.data.id}`);
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      console.error('API error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers,
+        config: error.config
+      });
+      throw error;
+    }
   } catch (error) {
     console.error('Failed to move draft to publishing:', error);
     throw error;
