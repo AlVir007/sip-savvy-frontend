@@ -29,6 +29,11 @@ export default function NewArticlePage() {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<string>('');
+  
+  // Article content state
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [excerpt, setExcerpt] = useState('');
 
   const handleSave = async (data: { title: string; content: string; excerpt: string }) => {
     if (!selectedPersona) {
@@ -53,6 +58,16 @@ export default function NewArticlePage() {
     }
   };
 
+  const handleSaveAsReview = async () => {
+    setStatus('review');
+    await handleSave({ title, content, excerpt });
+  };
+
+  const handleSaveAndPublish = async () => {
+    setStatus('published');
+    await handleSave({ title, content, excerpt });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -68,15 +83,15 @@ export default function NewArticlePage() {
         <div className="space-x-2">
           <Button
             variant="outline"
-            onClick={() => setStatus('review')}
-            disabled={saving}
+            onClick={handleSaveAsReview}
+            disabled={saving || !title.trim() || !content.trim() || !selectedPersona}
           >
             <Eye className="h-4 w-4 mr-2" />
             Save as Review
           </Button>
           <Button
-            onClick={() => setStatus('published')}
-            disabled={saving}
+            onClick={handleSaveAndPublish}
+            disabled={saving || !title.trim() || !content.trim() || !selectedPersona}
           >
             <Save className="h-4 w-4 mr-2" />
             Save & Publish
@@ -87,6 +102,12 @@ export default function NewArticlePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <ArticleEditor
+            title={title}
+            content={content}
+            onTitleChange={setTitle}
+            onChange={setContent}
+            metadata={{ excerpt }}
+            onMetadataChange={(metadata) => setExcerpt(metadata.excerpt || '')}
             onSave={handleSave}
             saving={saving}
           />
@@ -127,8 +148,8 @@ export default function NewArticlePage() {
                 <Label htmlFor="tags">Tags</Label>
                 <MultiSelect
                   options={tags.map(tag => ({ label: tag.name, value: tag.id.toString() }))}
-                  selected={selectedTags.map(id => id.toString())}
                   onChange={(values) => setSelectedTags(values.map(v => parseInt(v)))}
+                  selected={selectedTags.map(id => id.toString())}
                   placeholder="Select tags"
                 />
               </div>

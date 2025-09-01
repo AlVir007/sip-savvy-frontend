@@ -15,6 +15,8 @@ interface ArticleEditorProps {
     tags?: any[];
   };
   onMetadataChange?: (metadata: any) => void;
+  onSave?: (data: { title: string; content: string; excerpt: string }) => void;
+  saving?: boolean;
 }
 
 // Provide default values for all props
@@ -25,8 +27,20 @@ export function ArticleEditor({
   onTitleChange = () => {},
   readOnly = false,
   metadata = {},
-  onMetadataChange
+  onMetadataChange,
+  onSave,
+  saving = false
 }: ArticleEditorProps) {
+  const handleSave = () => {
+    if (onSave) {
+      onSave({
+        title,
+        content,
+        excerpt: metadata.excerpt || ''
+      });
+    }
+  };
+
   return (
     <div className="article-editor">
       {/* Title field */}
@@ -51,6 +65,19 @@ export function ArticleEditor({
           readOnly={readOnly}
         />
       </div>
+      
+      {/* Save button */}
+      {onSave && (
+        <div className="mb-4">
+          <button
+            onClick={handleSave}
+            disabled={saving || !title.trim() || !content.trim()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving...' : 'Save Article'}
+          </button>
+        </div>
+      )}
       
       {/* Metadata fields */}
       {onMetadataChange && (
