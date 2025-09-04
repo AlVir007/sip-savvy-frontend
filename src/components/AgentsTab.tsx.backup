@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AgentsDraggableGrid } from '@/components/AgentsDraggableGrid.tsx';
-import { AgentPerformanceDashboard } from '@/components/AgentPerformanceDashboard';
-import { Squares2X2Icon } from '@heroicons/react/24/outline';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +18,6 @@ const AgentsTab = ({ user }) => {
   const [agentExecutions, setAgentExecutions] = useState({});
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState({});
-  const [viewMode, setViewMode] = useState('grid'); // ADD THIS LINE HERE
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -206,136 +203,102 @@ const AgentsTab = ({ user }) => {
           <h2 className="text-2xl font-bold text-gray-900">AI Agents</h2>
           <p className="text-gray-600">Autonomous systems managing your editorial workflow</p>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className="px-3 py-1.5"
-            >
-              <Squares2X2Icon className="w-4 h-4 mr-1" />
-              Grid
-            </Button>
-            <Button
-              variant={viewMode === 'analytics' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('analytics')}
-              className="px-3 py-1.5"
-            >
-              <ChartBarIcon className="w-4 w-4 mr-1" />
-              Analytics
-            </Button>
-          </div>
-          
-          <Button onClick={fetchAgents} variant="outline">
-            Refresh Status
-          </Button>
-        </div>
+        <Button onClick={fetchAgents} variant="outline">
+          Refresh Status
+        </Button>
       </div>
 
-      {viewMode === 'analytics' ? (
-        <AgentPerformanceDashboard
-          agents={agentsArray}
-          agentExecutions={agentExecutions}
-          getSuccessRate={getSuccessRate}
-        />
-      ) : (
-        <>
-          {/* Agent Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
-                <CogIcon className="h-4 w-4 text-gray-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{agentsArray.length}</div>
-                <p className="text-xs text-gray-500">AI systems deployed</p>
-              </CardContent>
-            </Card>
+      {/* Agent Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
+            <CogIcon className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{agentsArray.length}</div>
+            <p className="text-xs text-gray-500">AI systems deployed</p>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-                <PlayIcon className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {agentsArray.filter(a => a.status === 'active').length}
-                </div>
-                <p className="text-xs text-gray-500">Currently running</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Executions</CardTitle>
-                <BoltIcon className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Object.values(agentExecutions).reduce((total, executions) => 
-                    total + (executions?.length || 0), 0
-                  )}
-                </div>
-                <p className="text-xs text-gray-500">All-time runs</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Success Rate</CardTitle>
-                <ChartBarIcon className="h-4 w-4 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {agentsArray.length > 0 
-                    ? Math.round(agentsArray.reduce((sum, agent) => sum + getSuccessRate(agent.id), 0) / agentsArray.length)
-                    : 0
-                  }%
-                </div>
-                <p className="text-xs text-gray-500">Success rate</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Debug Information */}
-          <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
-            <strong>Debug Info:</strong>
-            <div>API URL: {API_URL}/agents</div>
-            <div>Agents loaded: {agentsArray.length}</div>
-            <div>Auth token present: {!!localStorage.getItem('auth_token')}</div>
-          </div>
-
-          {/* Agents Grid */}
-          <AgentsDraggableGrid
-            agents={agentsArray}
-            executing={executing}
-            onExecuteAgent={executeAgent}
-            onUpdateAgentStatus={updateAgentStatus}
-            getLastExecutionTime={getLastExecutionTime}
-            getSuccessRate={getSuccessRate}
-            agentExecutions={agentExecutions}
-            onReorder={(newOrder) => {
-              console.log('New agent order:', newOrder.map(a => a.name || a.id));
-            }}
-          />
-
-          {agentsArray.length === 0 && (
-            <div className="text-center py-12">
-              <CogIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No agents found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Check your backend configuration or create new agents.
-              </p>
-              <Button className="mt-4" onClick={fetchAgents}>
-                Try Again
-              </Button>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
+            <PlayIcon className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {agentsArray.filter(a => a.status === 'active').length}
             </div>
-          )}
-        </>
+            <p className="text-xs text-gray-500">Currently running</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Executions</CardTitle>
+            <BoltIcon className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {Object.values(agentExecutions).reduce((total, executions) => 
+                total + (executions?.length || 0), 0
+              )}
+            </div>
+            <p className="text-xs text-gray-500">All-time runs</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Success Rate</CardTitle>
+            <ChartBarIcon className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {agentsArray.length > 0 
+                ? Math.round(agentsArray.reduce((sum, agent) => sum + getSuccessRate(agent.id), 0) / agentsArray.length)
+                : 0
+              }%
+            </div>
+            <p className="text-xs text-gray-500">Success rate</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Debug Information */}
+      <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+        <strong>Debug Info:</strong>
+        <div>API URL: {API_URL}/agents</div>
+        <div>Agents loaded: {agentsArray.length}</div>
+        <div>Auth token present: {!!localStorage.getItem('auth_token')}</div>
+      </div>
+
+      {/* Agents Grid */}
+      <AgentsDraggableGrid
+        agents={agentsArray}
+        executing={executing}
+        onExecuteAgent={executeAgent}
+        onUpdateAgentStatus={updateAgentStatus}
+        getLastExecutionTime={getLastExecutionTime}
+        getSuccessRate={getSuccessRate}
+        agentExecutions={agentExecutions}
+        onReorder={(newOrder) => {
+          console.log('New agent order:', newOrder.map(a => a.name || a.id));
+        }}
+      />
+
+      {agentsArray.length === 0 && (
+        <div className="text-center py-12">
+          <CogIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No agents found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Check your backend configuration or create new agents.
+          </p>
+          <Button className="mt-4" onClick={fetchAgents}>
+            Try Again
+          </Button>
+        </div>
       )}
     </div>
   );
