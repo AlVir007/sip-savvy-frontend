@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import Logo from '@/components/ui/Logo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -48,8 +49,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4">
-        <CardHeader>
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Logo size="md" showText={false} />
+          </div>
           <CardTitle>{isLogin ? 'Sign In' : 'Create Account'}</CardTitle>
+          <p className="text-sm text-gray-600">AI-powered newsroom for the drinks & HoReCa industry</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

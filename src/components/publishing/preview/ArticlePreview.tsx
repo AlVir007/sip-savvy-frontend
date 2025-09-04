@@ -131,8 +131,11 @@ export function ArticlePreview({ article, compact = false }: ArticlePreviewProps
         {article.tags && article.tags.length > 0 && (
           <div className="mt-8 pt-4 border-t border-gray-200">
             <div className="flex flex-wrap gap-2">
-              {article.tags.map((tag) => (
-                <Badge key={tag.id} variant="outline">
+              {article.tags.map((tag, index) => (
+                <Badge 
+                  key={tag.id ? `tag-${tag.id}` : `tag-${index}-${tag.name}`} 
+                  variant="outline"
+                >
                   {tag.name}
                 </Badge>
               ))}

@@ -78,7 +78,7 @@ export default function PublishingPage() {
                 </Select>
               </div>
               <p className="text-sm text-gray-500">
-                {articles.length} article{articles.length !== 1 ? 's' : ''}
+                {articles?.length || 0} article{(articles?.length || 0) !== 1 ? 's' : ''}
               </p>
             </div>
           </CardContent>
@@ -103,7 +103,7 @@ export default function PublishingPage() {
               </div>
             </CardContent>
           </Card>
-        ) : articles.length === 0 ? (
+        ) : (articles?.length || 0) === 0 ? (
           <Card>
             <CardContent className="p-12">
               <div className="text-center py-8">

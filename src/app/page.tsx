@@ -2,6 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import AgentsTab from '@/components/AgentsTab';
+import Logo from '@/components/ui/Logo';
+import { DraggableCard } from '@/components/DraggableCard';
+import { useDragAndDrop } from '@/hooks/useDragAndDrop.tsx';
+import { PersonasDraggableGrid } from '@/components/PersonasDraggableGrid';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -318,6 +323,9 @@ export default function Dashboard() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <Card className="w-full max-w-md mx-4">
             <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <Logo size="lg" showText={false} />
+              </div>
               <CardTitle className="text-2xl">Sip & Savvy</CardTitle>
               <p className="text-gray-600">Virtual Newsroom</p>
             </CardHeader>
@@ -339,10 +347,7 @@ export default function Dashboard() {
         <header className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <h1 className="text-2xl font-bold text-gray-900">Sip & Savvy</h1>
-                <span className="ml-2 text-sm text-gray-500">Virtual Newsroom</span>
-              </div>
+              <Logo size="sm" showText={true} />
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-600">
                   {user.name} ({user.organization?.name})
@@ -361,6 +366,7 @@ export default function Dashboard() {
             <div className="flex space-x-8">
               {[
                 { id: 'overview', name: 'Overview' },
+                { id: 'agents', name: 'Agents' },
                 { id: 'personas', name: 'Personas' },
                 { id: 'tasks', name: 'Tasks' },
                 { id: 'drafts', name: 'Drafts' },
@@ -439,6 +445,10 @@ export default function Dashboard() {
             </div>
           )}
 
+          {activeTab === 'agents' && (
+            <AgentsTab user={user} />
+          )}
+
           {activeTab === 'personas' && (
             <div>
               <div className="flex justify-between items-center mb-6">
@@ -464,67 +474,14 @@ export default function Dashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {personas.map((persona) => (
-                    <Card key={persona.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
-                              {persona.profile_picture && persona.profile_picture.startsWith('http') ? (
-                                <img 
-                                  src={persona.profile_picture} 
-                                  alt={persona.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-white font-medium">
-                                  {persona.profile_picture || persona.name.charAt(0)}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <CardTitle className="text-base">{persona.name}</CardTitle>
-                              <p className="text-sm text-gray-500">{persona.tone}</p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-1">
-                            <button
-                              onClick={() => handleEditPersona(persona)}
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeletePersona(persona)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-gray-600 mb-3">{persona.bio}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {persona.expertise_tags.slice(0, 3).map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {persona.expertise_tags.length > 3 && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                              +{persona.expertise_tags.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <PersonasDraggableGrid 
+                  personas={personas}
+                  onEditPersona={handleEditPersona}
+                  onDeletePersona={handleDeletePersona}
+                  onReorder={(newOrder) => {
+                    console.log('New persona order:', newOrder.map(p => p.name));
+                  }}
+                />
               )}
             </div>
           )}
