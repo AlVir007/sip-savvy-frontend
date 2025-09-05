@@ -30,6 +30,7 @@ import { PublishingModal } from '@/components/publishing/PublishingModal';
 // Import the utility function (you'll need to create this file)
 import { moveDraftToPublishing, getDraftByTaskId } from '@/lib/moveToPublishing';
 
+// just an empty space
 export default function Dashboard() {
   // 1. ALL hooks must be called first, before any conditional logic
   const { user, logout, isLoading: authLoading } = useAuth();
