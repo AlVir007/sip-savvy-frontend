@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { AgentCreationModal } from '@/components/AgentCreationModal';
+import { SourceManagementModal } from '@/components/SourceManagementModal';
 import { AgentsDraggableGrid } from '@/components/AgentsDraggableGrid.tsx';
 import { AgentPerformanceDashboard } from '@/components/AgentPerformanceDashboard';
-import { Squares2X2Icon } from '@heroicons/react/24/outline';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,10 @@ import {
   CogIcon, 
   ChartBarIcon,
   BoltIcon,
-  ClockIcon
+  ClockIcon,
+  PlusIcon, 
+  Squares2X2Icon, 
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
@@ -21,6 +25,8 @@ const AgentsTab = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState({});
   const [viewMode, setViewMode] = useState('grid'); // ADD THIS LINE HERE
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSourceModal, setShowSourceModal] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -229,6 +235,21 @@ const AgentsTab = ({ user }) => {
             </Button>
           </div>
           
+          <Button onClick={() => setShowCreateModal(true)} variant="default">
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Create Agent
+          </Button>
+          
+          {/* Add button to your header*/}          
+          <Button
+            onClick={() => setShowSourceModal(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <CircleStackIcon className="h-4 w-4" />
+            Manage Sources
+          </Button>
+
           <Button onClick={fetchAgents} variant="outline">
             Refresh Status
           </Button>
@@ -337,6 +358,17 @@ const AgentsTab = ({ user }) => {
           )}
         </>
       )}
+
+      <AgentCreationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onAgentCreated={fetchAgents}
+      />
+
+      <SourceManagementModal
+        isOpen={showSourceModal}
+        onClose={() => setShowSourceModal(false)}
+      />
     </div>
   );
 };
